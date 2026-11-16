@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quartier Generale</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root{
+    --bg:#0a0e13; --panel:#111820; --panel-2:#0d131a; --line:#1d2a36;
+    --fg:#cfe3e8; --muted:#7f96a4; --accent:#1fe0c4; --live:#ff3b5c;
+    --mono:"Space Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{min-height:100%}
+  body{margin:0;font-family:var(--sans);color:var(--fg);
+    background:
+      radial-gradient(1000px 600px at 15% -10%,rgba(31,224,196,.07),transparent 55%),
+      radial-gradient(800px 500px at 100% 0%,rgba(255,59,92,.05),transparent 50%),
+      var(--bg);
+    -webkit-font-smoothing:antialiased;min-height:100dvh}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:40;
+    background:repeating-linear-gradient(to bottom,rgba(255,255,255,.015) 0 1px,transparent 1px 3px);
+    mix-blend-mode:overlay}
+  a{text-decoration:none;color:inherit}
+
+  .wrap{max-width:900px;margin:0 auto;
+    padding-left:max(18px,env(safe-area-inset-left,0px));
+    padding-right:max(18px,env(safe-area-inset-right,0px));
+    padding-block:calc(26px + env(safe-area-inset-top,0px)) 40px}
+
+  header{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .emblem{width:52px;height:52px;border-radius:13px;flex:none;border:1px solid var(--line);
+    background:radial-gradient(circle at 50% 36%,rgba(31,224,196,.5),transparent 55%),conic-gradient(from 210deg,#13202a,#0c161d);
+    display:grid;place-items:center}
+  .emblem svg{width:30px;height:30px}
+  h1{font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;
+    font-size:clamp(1.3rem,5vw,1.9rem);margin:0;text-wrap:balance}
+  .sub{color:var(--muted);font-family:var(--mono);font-size:.68rem;letter-spacing:.24em;
+    text-transform:uppercase;margin-top:3px}
+  .lead{color:var(--muted);line-height:1.6;margin:18px 0 26px;max-width:62ch;font-size:.98rem}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+  .card{display:block;border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    transition:transform .14s ease,border-color .14s ease;position:relative}
+  .card:hover,.card:focus-visible{transform:translateY(-3px);border-color:var(--accent);outline:none}
+  .card .art{height:118px;position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+  .art.radar{background:radial-gradient(120% 120% at 50% 50%,#0f1c22,#0a1016)}
+  .art.sala{background:linear-gradient(var(--line) 1px,transparent 1px) 0 0/22px 22px,
+            linear-gradient(90deg,var(--line) 1px,transparent 1px) 0 0/22px 22px,#0b1218}
+  .art svg{position:absolute;inset:0;margin:auto;width:52px;height:52px;opacity:.9}
+  .ping{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--live);
+    box-shadow:0 0 0 0 rgba(255,59,92,.5);animation:ping 2.4s infinite}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,59,92,.5)}70%{box-shadow:0 0 0 14px rgba(255,59,92,0)}100%{box-shadow:0 0 0 0 rgba(255,59,92,0)}}
+  .cbody{padding:14px 16px 16px}
+  .cbody h2{margin:0 0 5px;font-size:1.05rem}
+  .cbody p{margin:0;color:var(--muted);font-size:.82rem;line-height:1.5}
+  .go{margin-top:12px;display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);
+    font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+
+  .soon{margin-top:30px;border:1px dashed var(--line);border-radius:14px;padding:18px 18px 8px;
+    background:rgba(13,19,26,.4)}
+  .soon h3{margin:0 0 4px;font-family:var(--mono);font-size:.68rem;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--muted)}
+  .soon .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 6px}
+  .chip{font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;color:var(--muted);
+    border:1px solid var(--line);border-radius:999px;padding:6px 11px;background:var(--panel-2)}
+  footer{margin-top:28px;color:var(--muted);font-family:var(--mono);font-size:.6rem;
+    letter-spacing:.1em;line-height:1.7;text-align:center}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="emblem">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1fe0c4" stroke-width="1.6">
+        <path d="M3 8l9-4 9 4v8l-9 4-9-4z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Quartier Generale</h1>
+      <div class="sub">Sistema privato</div>
+    </div>
+  </header>
+
+  <p class="lead">La tua base operativa. Da qui controlli i tuoi strumenti. Ogni riquadro è una stanza del quartier generale, e se ne possono aggiungere di nuove quando vuoi.</p>
+
+  <div class="grid">
+    <a class="card" href="radar.html">
+      <div class="art radar">
+        <span class="ping" style="left:60%;top:35%"></span>
+        <span class="ping" style="left:30%;top:60%;animation-delay:.8s"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#ff3b5c" stroke-width="1.6"><path d="M2 7h11v10H2z"/><path d="M13 10l8-4v12l-8-4"/></svg>
+      </div>
+      <div class="cbody">
+        <h2>Radar telecamere</h2>
+        <p>Dove sono le telecamere di videosorveglianza intorno a te, ovunque ti trovi.</p>
+        <span class="go">apri &rarr;</span>
+      </div>
+    </a>
+
+    <a class="card" href="sala.html">
+      <div class="art sala">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1fe0c4" stroke-width="1.6"><rect x="3" y="4" width="8" height="7" rx="1"/><rect x="13" y="4" width="8" height="7" rx="1"/><rect x="3" y="13" width="8" height="7" rx="1"/><rect x="13" y="13" width="8" height="7" rx="1"/></svg>
+      </div>
+      <div class="cbody">
+        <h2>Sala di controllo</h2>
+        <p>La griglia di tutte le tue telecamere, con mappa di casa, stato e allarmi.</p>
+        <span class="go">apri &rarr;</span>
+      </div>
+    </a>
+  </div>
+
+  <div class="soon">
+    <h3>Prossime stanze</h3>
+    <div class="chips">
+      <span class="chip">messaggi in codice</span>
+      <span class="chip">mappa dei posti segreti</span>
+      <span class="chip">diario missioni</span>
+      <span class="chip">+ quello che vuoi</span>
+    </div>
+  </div>
+
+  <footer>
+    Usa solo spazi tuoi o autorizzati · i dati delle telecamere sono pubblici (OpenStreetMap) · la tua posizione resta sul tuo dispositivo
+  </footer>
+</div>
+</body>
+</html>

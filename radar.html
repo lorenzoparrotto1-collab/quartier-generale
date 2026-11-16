@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Radar telecamere</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --bg:#0a0e13; --panel:#111820cc; --panel-solid:#111820; --line:#1d2a36;
+    --fg:#cfe3e8; --muted:#7f96a4; --accent:#1fe0c4; --live:#ff3b5c; --warn:#ffb300;
+    --mono:"Space Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--fg);overflow:hidden;
+    -webkit-font-smoothing:antialiased}
+
+  #map{position:absolute;inset:0;z-index:1;background:#0a0e13}
+  .leaflet-container{background:#0a0e13;font-family:var(--sans)}
+  .leaflet-control-zoom a{background:var(--panel-solid)!important;color:var(--fg)!important;
+    border-color:var(--line)!important}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel-solid);color:var(--fg);
+    border:1px solid var(--line)}
+  .leaflet-popup-content{font-family:var(--mono);font-size:.74rem;line-height:1.6;margin:10px 12px}
+  .leaflet-popup-content b{color:var(--accent)}
+
+  /* marker telecamera */
+  .camicon{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;
+    border:1.5px solid var(--live);background:rgba(255,59,92,.18);
+    box-shadow:0 0 0 0 rgba(255,59,92,.5);animation:ping 2.6s infinite}
+  .camicon.priv{border-color:var(--warn);background:rgba(255,179,0,.16);animation:none}
+  .camicon svg{width:13px;height:13px}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,59,92,.45)}70%{box-shadow:0 0 0 10px rgba(255,59,92,0)}100%{box-shadow:0 0 0 0 rgba(255,59,92,0)}}
+  .mepin{width:18px;height:18px;border-radius:50%;background:var(--accent);
+    border:3px solid #06110e;box-shadow:0 0 0 4px rgba(31,224,196,.25)}
+
+  /* TOP BAR */
+  .topbar{position:absolute;z-index:5;top:0;left:0;right:0;
+    padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px));
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+    background:linear-gradient(180deg,rgba(8,12,16,.92),rgba(8,12,16,0))}
+  .title{display:flex;align-items:center;gap:9px;font-family:var(--mono);
+    letter-spacing:.14em;text-transform:uppercase;font-size:.82rem;white-space:nowrap}
+  .title .dot{width:9px;height:9px;border-radius:50%;background:var(--live);
+    box-shadow:0 0 8px var(--live);animation:ping 2.6s infinite}
+  .search{flex:1 1 180px;display:flex;gap:0;min-width:140px;
+    border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel-solid)}
+  .search input{flex:1;min-width:0;border:0;background:transparent;color:var(--fg);
+    font-family:var(--sans);font-size:.9rem;padding:9px 11px}
+  .search input:focus{outline:none}
+  .search button{border:0;background:transparent;color:var(--accent);padding:0 12px;cursor:pointer;
+    font-family:var(--mono);font-size:.7rem;letter-spacing:.1em}
+
+  .btn{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
+    border:1px solid var(--line);background:var(--panel-solid);color:var(--fg);
+    padding:9px 12px;border-radius:10px;cursor:pointer;white-space:nowrap;transition:all .13s}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{border-color:rgba(31,224,196,.5);color:var(--accent)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* RADAR PANEL */
+  .radar{position:absolute;z-index:5;left:max(12px,env(safe-area-inset-left,0px));
+    bottom:calc(14px + env(safe-area-inset-bottom,0px));width:min(320px,calc(100vw - 24px));
+    border:1px solid var(--line);background:var(--panel);backdrop-filter:blur(10px);
+    border-radius:14px;overflow:hidden}
+  .radar .rh{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:11px 13px;border-bottom:1px solid var(--line)}
+  .radar .rh h2{margin:0;font-family:var(--mono);font-size:.7rem;letter-spacing:.18em;
+    text-transform:uppercase}
+  .radar .rh .st{font-family:var(--mono);font-size:.6rem;color:var(--muted);letter-spacing:.1em}
+  .scope{position:relative;height:150px;display:grid;place-items:center}
+  .scope canvas{position:absolute;inset:0;width:100%;height:100%}
+  .scope .big{position:relative;z-index:2;text-align:center}
+  .scope .big .n{font-family:var(--mono);font-size:2.4rem;line-height:1;color:var(--live)}
+  .scope .big .k{font-size:.58rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-top:4px}
+  .nearest{padding:10px 13px;border-top:1px solid var(--line);font-family:var(--mono);
+    font-size:.68rem;color:var(--muted);line-height:1.6}
+  .nearest b{color:var(--fg)}
+  .nearest .dir{color:var(--accent)}
+  .hintbar{padding:9px 13px;border-top:1px solid var(--line);font-size:.62rem;color:var(--muted);line-height:1.5}
+
+  /* TOAST */
+  .toast{position:absolute;z-index:8;top:calc(66px + env(safe-area-inset-top,0px));left:50%;
+    transform:translateX(-50%);background:var(--panel-solid);border:1px solid var(--line);
+    color:var(--fg);font-family:var(--mono);font-size:.68rem;letter-spacing:.06em;
+    padding:9px 14px;border-radius:10px;opacity:0;transition:opacity .25s;pointer-events:none;
+    max-width:90vw;text-align:center}
+  .toast.show{opacity:1}
+  .toast.err{border-color:var(--live);color:#ffd4dc}
+
+  .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--muted);
+    border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-1px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important}}
+  @media(max-width:520px){.title span.t{display:none}}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="topbar">
+  <div class="title"><span class="dot"></span><span class="t">Radar telecamere</span></div>
+  <form class="search" id="searchForm">
+    <input id="q" placeholder="cerca una via, una città…" autocomplete="off">
+    <button type="submit">vai</button>
+  </form>
+  <button class="btn primary" id="locBtn">📍 la mia posizione</button>
+  <button class="btn" id="scanBtn">scansiona qui</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="radar">
+  <div class="rh"><h2>Radar</h2><span class="st" id="scanst">in attesa</span></div>
+  <div class="scope">
+    <canvas id="scope"></canvas>
+    <div class="big"><div class="n" id="count">—</div><div class="k">telecamere in vista</div></div>
+  </div>
+  <div class="nearest" id="nearest">Cerca un luogo o usa la tua posizione, poi premi <b>scansiona qui</b>.</div>
+  <div class="hintbar">Dati pubblici OpenStreetMap. Mostra <b>dove</b> sono le telecamere segnalate, non cosa riprendono.</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+  "use strict";
+  var map=L.map("map",{zoomControl:true,attributionControl:true}).setView([41.9028,12.4964],16); // Roma default
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",{
+    maxZoom:20,subdomains:"abcd",
+    attribution:'&copy; OpenStreetMap &middot; &copy; CARTO'
+  }).addTo(map);
+
+  var camLayer=L.layerGroup().addTo(map);
+  var meMarker=null, meLatLng=null;
+
+  var camSvg='<svg viewBox="0 0 24 24" fill="none" stroke="#ff3b5c" stroke-width="2"><path d="M2 7h11v10H2z"/><path d="M13 10l8-4v12l-8-4"/></svg>';
+  var camSvgY=camSvg.replace(/#ff3b5c/g,"#ffb300");
+
+  // ---------- TOAST ----------
+  var toastEl=document.getElementById("toast"),toastT=null;
+  function toast(msg,err,sticky){
+    toastEl.innerHTML=msg;toastEl.className="toast show"+(err?" err":"");
+    if(toastT)clearTimeout(toastT);
+    if(!sticky)toastT=setTimeout(function(){toastEl.className="toast"+(err?" err":"");},3200);
+  }
+  function hideToast(){toastEl.className="toast";}
+
+  // ---------- RADAR SWEEP ----------
+  var cv=document.getElementById("scope"),cx=cv.getContext("2d"),ang=0,blips=[];
+  function sizeCv(){var r=cv.getBoundingClientRect();cv.width=r.width*2;cv.height=r.height*2;}
+  function drawScope(){
+    sizeCv();
+    var w=cv.width,h=cv.height,cxx=w/2,cyy=h/2,R=Math.min(w,h)/2-6;
+    cx.clearRect(0,0,w,h);
+    // cerchi
+    cx.strokeStyle="rgba(31,224,196,.18)";cx.lineWidth=1.5;
+    [0.33,0.66,1].forEach(function(f){cx.beginPath();cx.arc(cxx,cyy,R*f,0,7);cx.stroke();});
+    cx.beginPath();cx.moveTo(cxx-R,cyy);cx.lineTo(cxx+R,cyy);cx.moveTo(cxx,cyy-R);cx.lineTo(cxx,cyy+R);cx.stroke();
+    // sweep
+    var g=cx.createConicGradient?null:null;
+    cx.save();cx.translate(cxx,cyy);cx.rotate(ang);
+    var grad=cx.createLinearGradient(0,0,R,0);
+    grad.addColorStop(0,"rgba(31,224,196,.35)");grad.addColorStop(1,"rgba(31,224,196,0)");
+    cx.fillStyle=grad;cx.beginPath();cx.moveTo(0,0);cx.arc(0,0,R,-0.5,0);cx.closePath();cx.fill();
+    cx.restore();
+    // blips
+    blips.forEach(function(b){
+      var x=cxx+Math.cos(b.a)*R*b.r, y=cyy+Math.sin(b.a)*R*b.r;
+      cx.fillStyle="rgba(255,59,92,.9)";cx.beginPath();cx.arc(x,y,3,0,7);cx.fill();
+    });
+    ang+=0.03;requestAnimationFrame(drawScope);
+  }
+  drawScope();
+  function setBlips(cams,center){
+    blips=cams.slice(0,60).map(function(c){
+      var dx=c.lon-center.lng, dy=c.lat-center.lat;
+      var a=Math.atan2(-dy,dx); var dist=Math.sqrt(dx*dx+dy*dy);
+      var maxd=0.01; var r=Math.min(1,dist/maxd);
+      return {a:a,r:0.15+r*0.8};
+    });
+  }
+
+  // ---------- DISTANCE / DIRECTION ----------
+  function haversine(a,b,c,d){
+    var R=6371000,toR=Math.PI/180;
+    var dLat=(c-a)*toR,dLon=(d-b)*toR;
+    var s=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a*toR)*Math.cos(c*toR)*Math.sin(dLon/2)*Math.sin(dLon/2);
+    return 2*R*Math.asin(Math.sqrt(s));
+  }
+  var DIRS=["N","NE","E","SE","S","SO","O","NO"];
+  function bearing(a,b,c,d){
+    var toR=Math.PI/180,toD=180/Math.PI;
+    var y=Math.sin((d-b)*toR)*Math.cos(c*toR);
+    var x=Math.cos(a*toR)*Math.sin(c*toR)-Math.sin(a*toR)*Math.cos(c*toR)*Math.cos((d-b)*toR);
+    var br=(Math.atan2(y,x)*toD+360)%360;
+    return DIRS[Math.round(br/45)%8];
+  }
+  function fmtDist(m){return m<1000?Math.round(m)+" m":(m/1000).toFixed(1)+" km";}
+
+  // ---------- SCAN (Overpass) ----------
+  var scanning=false;
+  function scan(){
+    if(scanning)return;
+    var b=map.getBounds();
+    var area=Math.abs(b.getNorth()-b.getSouth())*Math.abs(b.getEast()-b.getWest());
+    if(area>0.08){toast("zona troppo ampia · avvicinati con lo zoom",true);return;}
+    scanning=true;
+    document.getElementById("scanst").innerHTML='<span class="spin"></span> scansione';
+    document.getElementById("count").textContent="…";
+    var s=b.getSouth(),w=b.getWest(),n=b.getNorth(),e=b.getEast();
+    var query="[out:json][timeout:25];(node[\"man_made\"=\"surveillance\"]("+s+","+w+","+n+","+e+");way[\"man_made\"=\"surveillance\"]("+s+","+w+","+n+","+e+"););out center 400;";
+    fetch("https://overpass-api.de/api/interpreter",{
+      method:"POST",
+      body:"data="+encodeURIComponent(query)
+    }).then(function(r){
+      if(!r.ok)throw new Error("overpass "+r.status);
+      return r.json();
+    }).then(function(d){
+      renderCams(d.elements||[]);
+    }).catch(function(err){
+      toast("server occupato, riprova tra poco",true);
+      document.getElementById("scanst").textContent="errore";
+      document.getElementById("count").textContent="—";
+    }).finally(function(){scanning=false;});
+  }
+
+  function renderCams(els){
+    camLayer.clearLayers();
+    var center=map.getCenter();
+    var ref=meLatLng||center;
+    var cams=els.map(function(el){
+      var lat=el.lat!=null?el.lat:(el.center&&el.center.lat);
+      var lon=el.lon!=null?el.lon:(el.center&&el.center.lon);
+      if(lat==null)return null;
+      var t=el.tags||{};
+      return {lat:lat,lon:lon,tags:t,
+        dist:haversine(ref.lat,ref.lng,lat,lon),
+        dir:bearing(ref.lat,ref.lng,lat,lon)};
+    }).filter(Boolean);
+
+    cams.forEach(function(c){
+      var priv=(c.tags["surveillance"]==="outdoor"||c.tags["surveillance"]==="indoor")&&c.tags["surveillance:zone"]!=="public";
+      var icon=L.divIcon({className:"",html:'<div class="camicon'+(priv?" priv":"")+'">'+(priv?camSvgY:camSvg)+'</div>',
+        iconSize:[24,24],iconAnchor:[12,12]});
+      var type=c.tags["surveillance:type"]||c.tags["camera:type"]||"camera";
+      var op=c.tags["operator"]||c.tags["surveillance"]||"—";
+      var pop="<b>Telecamera</b><br>tipo: "+esc(type)+"<br>gestore: "+esc(op)+"<br>distanza: "+fmtDist(c.dist)+" ("+c.dir+")";
+      L.marker([c.lat,c.lon],{icon:icon}).bindPopup(pop).addTo(camLayer);
+    });
+
+    cams.sort(function(a,b){return a.dist-b.dist;});
+    document.getElementById("count").textContent=cams.length;
+    document.getElementById("scanst").textContent=cams.length+" trovate";
+    setBlips(cams,center);
+
+    var ne=document.getElementById("nearest");
+    if(!cams.length){
+      ne.innerHTML="Nessuna telecamera <b>segnalata</b> in questa zona.<br>Vuol dire che non è mappata su OpenStreetMap, non per forza che non ce ne siano.";
+    }else{
+      var c0=cams[0];
+      ne.innerHTML="Più vicina: <b>"+fmtDist(c0.dist)+"</b> verso <span class='dir'>"+c0.dir+"</span>"+
+        (meLatLng?" da te":" dal centro mappa")+"<br>"+
+        "In 1° piano: <b>"+cams.filter(function(c){return c.dist<100;}).length+"</b> entro 100 m · <b>"+
+        cams.filter(function(c){return c.dist<300;}).length+"</b> entro 300 m";
+    }
+    toast(cams.length?("rilevate "+cams.length+" telecamere"):"zona pulita");
+  }
+  function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
+
+  // ---------- LOCATE ----------
+  function setMe(lat,lng){
+    meLatLng={lat:lat,lng:lng};
+    if(meMarker)map.removeLayer(meMarker);
+    meMarker=L.marker([lat,lng],{icon:L.divIcon({className:"",html:'<div class="mepin"></div>',iconSize:[18,18],iconAnchor:[9,9]}),zIndexOffset:1000}).addTo(map);
+  }
+  document.getElementById("locBtn").onclick=function(){
+    if(!navigator.geolocation){toast("geolocalizzazione non disponibile",true);return;}
+    toast('<span class="spin"></span> cerco la tua posizione…',false,true);
+    navigator.geolocation.getCurrentPosition(function(p){
+      hideToast();
+      setMe(p.coords.latitude,p.coords.longitude);
+      map.setView([p.coords.latitude,p.coords.longitude],17);
+      scan();
+    },function(err){
+      var msg="posizione negata";
+      if(err.code===1)msg="permesso posizione negato · cerca a mano una via";
+      else if(err.code===2)msg="posizione non disponibile qui · prova a cercare una via";
+      toast(msg,true);
+    },{enableHighAccuracy:true,timeout:9000,maximumAge:30000});
+  };
+
+  // ---------- SEARCH (Nominatim) ----------
+  document.getElementById("searchForm").addEventListener("submit",function(e){
+    e.preventDefault();
+    var q=document.getElementById("q").value.trim();
+    if(!q)return;
+    toast('<span class="spin"></span> cerco "'+esc(q)+'"…',false,true);
+    fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="+encodeURIComponent(q))
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d.length){toast("luogo non trovato",true);return;}
+        hideToast();
+        var lat=parseFloat(d[0].lat),lon=parseFloat(d[0].lon);
+        map.setView([lat,lon],17);
+        setTimeout(scan,350);
+      }).catch(function(){toast("ricerca non riuscita",true);});
+  });
+
+  document.getElementById("scanBtn").onclick=scan;
+
+  // primo avvio
+  toast("Benvenuto. Cerca un luogo o usa 📍 la tua posizione.",false);
+})();
+</script>
+</body>
+</html>

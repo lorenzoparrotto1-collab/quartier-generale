@@ -37,6 +37,8 @@
   @keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,59,92,.45)}70%{box-shadow:0 0 0 10px rgba(255,59,92,0)}100%{box-shadow:0 0 0 0 rgba(255,59,92,0)}}
   .mepin{width:18px;height:18px;border-radius:50%;background:var(--accent);
     border:3px solid #06110e;box-shadow:0 0 0 4px rgba(31,224,196,.25)}
+  .mineicon{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1.5px solid var(--accent);background:rgba(31,224,196,.2);box-shadow:0 0 10px rgba(31,224,196,.4)}
+  .mineicon svg{width:14px;height:14px}
 
   /* TOP BAR */
   .topbar{position:absolute;z-index:5;top:0;left:0;right:0;
@@ -110,6 +112,7 @@
   </form>
   <button class="btn primary" id="locBtn">📍 la mia posizione</button>
   <button class="btn" id="scanBtn">scansiona qui</button>
+  <button class="btn" id="scoutBtn" style="border-color:rgba(31,224,196,.5);color:var(--accent)">📍 segna qui</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -139,6 +142,7 @@
 
   var camSvg='<svg viewBox="0 0 24 24" fill="none" stroke="#ff3b5c" stroke-width="2"><path d="M2 7h11v10H2z"/><path d="M13 10l8-4v12l-8-4"/></svg>';
   var camSvgY=camSvg.replace(/#ff3b5c/g,"#ffb300");
+  var camSvgC=camSvg.replace(/#ff3b5c/g,"#1fe0c4");
 
   // ---------- TOAST ----------
   var toastEl=document.getElementById("toast"),toastT=null;
@@ -311,6 +315,43 @@
   });
 
   document.getElementById("scanBtn").onclick=scan;
+
+  // ---------- SCOUT: telecamere scoperte da me ----------
+  var MINE="qg_mine_v1";
+  function loadMine(){try{return JSON.parse(localStorage.getItem(MINE)||"[]");}catch(e){return [];}}
+  function saveMine(a){try{localStorage.setItem(MINE,JSON.stringify(a));}catch(e){}}
+  var mineLayer=L.layerGroup().addTo(map);
+  function renderMine(){
+    mineLayer.clearLayers();
+    var a=loadMine();
+    a.forEach(function(p,idx){
+      var ic=L.divIcon({className:"",html:'<div class="mineicon">'+camSvgC+'</div>',iconSize:[26,26],iconAnchor:[13,13]});
+      var d=new Date(p.ts);
+      L.marker([p.lat,p.lon],{icon:ic,zIndexOffset:900}).addTo(mineLayer)
+        .bindPopup('<b>Tua scoperta</b><br>'+d.toLocaleString('it-IT')+'<br><a href="#" data-del="'+idx+'" style="color:#ff3b5c">rimuovi</a>');
+    });
+    var b=document.getElementById("scoutBtn");
+    if(b)b.innerHTML="📍 segna qui"+(a.length?(" ("+a.length+")"):"");
+  }
+  map.on("popupopen",function(e){
+    var el=e.popup.getElement(); if(!el)return;
+    var del=el.querySelector("[data-del]");
+    if(del)del.onclick=function(ev){ev.preventDefault();var i=+del.getAttribute("data-del");var a=loadMine();a.splice(i,1);saveMine(a);map.closePopup();renderMine();toast("segnalazione rimossa");};
+  });
+  document.getElementById("scoutBtn").onclick=function(){
+    if(!navigator.geolocation){toast("GPS non disponibile",true);return;}
+    toast('<span class="spin"></span> prendo la posizione esatta…',false,true);
+    navigator.geolocation.getCurrentPosition(function(p){
+      var a=loadMine();
+      a.push({lat:p.coords.latitude,lon:p.coords.longitude,ts:Date.now()});
+      saveMine(a);
+      setMe(p.coords.latitude,p.coords.longitude);
+      renderMine();
+      hideToast();
+      toast("telecamera segnata ✓ ("+a.length+")");
+    },function(){toast("posizione non presa, riprova",true);},{enableHighAccuracy:true,timeout:10000,maximumAge:0});
+  };
+  renderMine();
 
   // primo avvio
   toast("Benvenuto. Cerca un luogo o usa 📍 la tua posizione.",false);

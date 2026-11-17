@@ -516,6 +516,16 @@
 })();
 </script>
 
-<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+<script>
+if("serviceWorker" in navigator){
+  var _refreshing=false;
+  navigator.serviceWorker.addEventListener("controllerchange",function(){if(_refreshing)return;_refreshing=true;location.reload();});
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("sw.js").then(function(reg){
+      if(reg&&reg.update){setInterval(function(){try{reg.update();}catch(e){}},60000);}
+    }).catch(function(){});
+  });
+}
+</script>
 </body>
 </html>

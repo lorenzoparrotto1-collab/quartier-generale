@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cassaforte">
+<title>Cassaforte</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root{
+    --bg:#0a0e13; --panel:#111820; --panel-2:#0d131a; --line:#1d2a36;
+    --fg:#cfe3e8; --muted:#7f96a4; --accent:#1fe0c4; --live:#ff3b5c; --warn:#ffb300;
+    --mono:"Space Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--sans);color:var(--fg);
+    background:radial-gradient(900px 500px at 50% -10%,rgba(31,224,196,.06),transparent 55%),var(--bg);
+    -webkit-font-smoothing:antialiased;min-height:100dvh}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:40;
+    background:repeating-linear-gradient(to bottom,rgba(255,255,255,.015) 0 1px,transparent 1px 3px);mix-blend-mode:overlay}
+  a{color:var(--accent)}
+
+  .top{display:flex;align-items:center;gap:10px;
+    padding:calc(12px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 12px max(14px,env(safe-area-inset-left,0px))}
+  .back{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
+    border:1px solid var(--line);background:var(--panel);color:var(--fg);text-decoration:none;
+    padding:8px 11px;border-radius:9px;display:inline-flex;align-items:center;gap:5px}
+  .top h1{font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;font-size:.9rem;margin:0}
+
+  .screen{max-width:420px;margin:0 auto;
+    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+    padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+
+  /* LOCK */
+  .vaulticon{width:78px;height:78px;margin:6px auto 14px;border-radius:50%;
+    border:2px solid var(--line);display:grid;place-items:center;position:relative;
+    background:radial-gradient(circle at 50% 38%,rgba(31,224,196,.18),transparent 60%),conic-gradient(from 210deg,#13202a,#0c161d)}
+  .vaulticon.open{border-color:var(--accent);box-shadow:0 0 24px rgba(31,224,196,.3)}
+  .vaulticon svg{width:38px;height:38px}
+  .lead{text-align:center;color:var(--muted);font-size:.86rem;line-height:1.5;margin:0 0 16px}
+  .lead b{color:var(--fg)}
+
+  .dots{display:flex;gap:11px;justify-content:center;margin:0 0 18px;min-height:16px}
+  .dots i{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--muted);transition:all .12s}
+  .dots i.on{background:var(--accent);border-color:var(--accent);box-shadow:0 0 8px rgba(31,224,196,.5)}
+  .shake{animation:shake .35s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+  .msg{text-align:center;font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;min-height:18px;margin:0 0 14px;color:var(--muted)}
+  .msg.err{color:var(--live)} .msg.ok{color:var(--accent)}
+
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:300px;margin:0 auto}
+  .key{aspect-ratio:1/1;border:1px solid var(--line);background:var(--panel);color:var(--fg);
+    border-radius:16px;font-family:var(--mono);font-size:1.5rem;cursor:pointer;display:grid;place-items:center;
+    transition:transform .08s,border-color .12s,background .12s;user-select:none}
+  .key:active{transform:scale(.94);border-color:var(--accent);background:var(--panel-2)}
+  .key.fn{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .key.ok{color:var(--accent);border-color:rgba(31,224,196,.4)}
+  .forgot{display:block;text-align:center;margin:20px auto 0;color:var(--muted);font-size:.68rem;
+    background:none;border:0;text-decoration:underline;cursor:pointer;font-family:var(--mono)}
+
+  /* VAULT */
+  .vault{display:none}
+  .vbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 14px}
+  .vbar .t{font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;font-size:.74rem;color:var(--accent)}
+  .btn{font-family:var(--mono);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;
+    border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:8px 11px;border-radius:9px;cursor:pointer}
+  .btn:active{transform:scale(.97)} .btn.lock{border-color:rgba(31,224,196,.4);color:var(--accent)}
+  .btn.danger{border-color:rgba(255,59,92,.4);color:var(--live)}
+
+  .add{display:grid;gap:9px;border:1px solid var(--line);background:var(--panel);border-radius:13px;padding:13px;margin-bottom:16px}
+  .add input,.add textarea{font-family:var(--sans);font-size:.92rem;background:var(--panel-2);color:var(--fg);
+    border:1px solid var(--line);border-radius:9px;padding:10px}
+  .add textarea{min-height:64px;resize:vertical}
+  .add input:focus,.add textarea:focus{outline:none;border-color:var(--accent)}
+  .add .row{display:flex;justify-content:flex-end;gap:8px}
+
+  .notes{display:grid;gap:10px}
+  .note{border:1px solid var(--line);background:var(--panel-2);border-radius:12px;padding:12px 13px}
+  .note h3{margin:0 0 5px;font-size:.98rem}
+  .note p{margin:0;color:var(--muted);font-size:.85rem;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+  .note .del{margin-top:8px;background:none;border:0;color:var(--live);font-family:var(--mono);
+    font-size:.62rem;letter-spacing:.08em;cursor:pointer;padding:0;text-decoration:underline}
+  .empty{text-align:center;color:var(--muted);font-size:.82rem;line-height:1.5;padding:18px 0}
+  .foot{text-align:center;color:var(--muted);font-family:var(--mono);font-size:.58rem;letter-spacing:.08em;
+    line-height:1.6;margin-top:22px}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="top">
+  <a class="back" href="index.html">&lsaquo; QG</a>
+  <h1>Cassaforte</h1>
+</div>
+
+<div class="screen">
+  <!-- SCHERMATA CODICE -->
+  <div id="lockView">
+    <div class="vaulticon" id="vicon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1fe0c4" stroke-width="1.6">
+        <rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M12 10v4"/>
+      </svg>
+    </div>
+    <p class="lead" id="lockLead">Inserisci il tuo codice.</p>
+    <div class="dots" id="dots"></div>
+    <div class="msg" id="msg"></div>
+    <div class="pad" id="pad">
+      <button class="key" data-k="1">1</button>
+      <button class="key" data-k="2">2</button>
+      <button class="key" data-k="3">3</button>
+      <button class="key" data-k="4">4</button>
+      <button class="key" data-k="5">5</button>
+      <button class="key" data-k="6">6</button>
+      <button class="key" data-k="7">7</button>
+      <button class="key" data-k="8">8</button>
+      <button class="key" data-k="9">9</button>
+      <button class="key fn" data-k="del">canc</button>
+      <button class="key" data-k="0">0</button>
+      <button class="key fn ok" data-k="ok">ok</button>
+    </div>
+    <button class="forgot" id="forgot" hidden>ho dimenticato il codice</button>
+  </div>
+
+  <!-- CONTENUTO -->
+  <div class="vault" id="vaultView">
+    <div class="vbar">
+      <span class="t">Cassaforte aperta</span>
+      <button class="btn lock" id="lockBtn">chiudi</button>
+    </div>
+    <div class="add">
+      <input id="nTitle" maxlength="60" placeholder="Titolo (es. password del diario)">
+      <textarea id="nBody" maxlength="2000" placeholder="Il segreto da custodire..."></textarea>
+      <div class="row"><button class="btn" id="addBtn">+ custodisci</button></div>
+    </div>
+    <div class="notes" id="notes"></div>
+    <div class="foot">
+      Tutto resta chiuso a chiave su questo dispositivo.<br>
+      <button class="btn danger" id="changePin" style="margin-top:10px">cambia codice</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KPIN="qg_vault_check", KDATA="qg_vault_data";
+  var TOKEN="VAULT-OK-7";
+  var pin="";            // codice digitato ora
+  var mode="";           // "unlock" | "set1" | "set2"
+  var firstPin="";       // per impostazione
+  var sessionPin="";     // codice valido in sessione (per salvare)
+
+  // --- cifratura giocosa (XOR + base64): non è sicurezza vera, è un lucchetto da gioco ---
+  function enc(str,key){
+    var o="";for(var i=0;i<str.length;i++)o+=String.fromCharCode(str.charCodeAt(i)^key.charCodeAt(i%key.length));
+    try{return btoa(unescape(encodeURIComponent(o)));}catch(e){return "";}
+  }
+  function dec(b64,key){
+    try{var r=decodeURIComponent(escape(atob(b64)));var o="";
+      for(var i=0;i<r.length;i++)o+=String.fromCharCode(r.charCodeAt(i)^key.charCodeAt(i%key.length));return o;
+    }catch(e){return null;}
+  }
+  function ls(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function lss(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+  function lsd(k){try{localStorage.removeItem(k);}catch(e){}}
+  function hasPin(){return !!ls(KPIN);}
+
+  // --- UI tastierino ---
+  var dotsEl=document.getElementById("dots"), msgEl=document.getElementById("msg");
+  var leadEl=document.getElementById("lockLead"), viconEl=document.getElementById("vicon");
+  function renderDots(){
+    var n=Math.max(pin.length,0);
+    var html="";for(var i=0;i<Math.max(n,4);i++)html+='<i class="'+(i<pin.length?"on":"")+'"></i>';
+    dotsEl.innerHTML=html;
+  }
+  function setMsg(t,cls){msgEl.textContent=t||"";msgEl.className="msg"+(cls?" "+cls:"");}
+  function shake(){viconEl.classList.remove("shake");void viconEl.offsetWidth;viconEl.classList.add("shake");}
+
+  function startMode(){
+    pin="";firstPin="";
+    if(hasPin()){mode="unlock";leadEl.innerHTML="Inserisci il tuo codice.";document.getElementById("forgot").hidden=false;}
+    else{mode="set1";leadEl.innerHTML="Prima volta: <b>scegli un codice</b> (almeno 4 cifre).";document.getElementById("forgot").hidden=true;}
+    setMsg("");renderDots();
+  }
+
+  function press(k){
+    if(k==="del"){pin=pin.slice(0,-1);setMsg("");renderDots();return;}
+    if(k==="ok"){submit();return;}
+    if(pin.length>=8)return;
+    pin+=k;setMsg("");renderDots();
+    if(mode==="unlock"){ /* niente auto: preme ok */ }
+  }
+  function submit(){
+    if(mode==="set1"){
+      if(pin.length<4){setMsg("almeno 4 cifre",'err');shake();return;}
+      firstPin=pin;pin="";mode="set2";leadEl.innerHTML="Ripeti il codice per conferma.";renderDots();setMsg("");
+      return;
+    }
+    if(mode==="set2"){
+      if(pin!==firstPin){setMsg("non coincide, riprova",'err');shake();pin="";firstPin="";mode="set1";
+        leadEl.innerHTML="Scegli un codice (almeno 4 cifre).";renderDots();return;}
+      // salva
+      lss(KPIN, enc(TOKEN,pin));
+      if(!ls(KDATA))lss(KDATA, enc(JSON.stringify([]),pin));
+      sessionPin=pin;openVault();return;
+    }
+    if(mode==="unlock"){
+      if(pin.length<4){setMsg("codice troppo corto",'err');shake();return;}
+      var chk=dec(ls(KPIN),pin);
+      if(chk===TOKEN){sessionPin=pin;openVault();}
+      else{setMsg("codice errato",'err');shake();pin="";renderDots();}
+    }
+  }
+
+  document.getElementById("pad").addEventListener("click",function(e){
+    var b=e.target.closest("[data-k]");if(!b)return;press(b.getAttribute("data-k"));
+  });
+  document.addEventListener("keydown",function(e){
+    if(document.getElementById("vaultView").style.display==="block")return;
+    if(e.key>="0"&&e.key<="9")press(e.key);
+    else if(e.key==="Backspace")press("del");
+    else if(e.key==="Enter")press("ok");
+  });
+
+  document.getElementById("forgot").onclick=function(){
+    if(confirm("Se hai dimenticato il codice, l'unico modo è azzerare la cassaforte. Si perde TUTTO il contenuto. Procedere?")){
+      lsd(KPIN);lsd(KDATA);startMode();setMsg("cassaforte azzerata",'ok');
+    }
+  };
+
+  // --- VAULT ---
+  function loadNotes(){var d=dec(ls(KDATA),sessionPin);if(d===null)return [];try{var a=JSON.parse(d);return Array.isArray(a)?a:[];}catch(e){return [];}}
+  function saveNotes(a){lss(KDATA, enc(JSON.stringify(a),sessionPin));}
+  function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
+
+  function renderNotes(){
+    var a=loadNotes(), box=document.getElementById("notes");
+    if(!a.length){box.innerHTML='<div class="empty">La cassaforte è vuota.<br>Scrivi sopra il tuo primo segreto e tocca <b>custodisci</b>.</div>';return;}
+    box.innerHTML="";
+    a.forEach(function(n,idx){
+      var el=document.createElement("div");el.className="note";
+      el.innerHTML='<h3>'+esc(n.t||"(senza titolo)")+'</h3>'+(n.b?'<p>'+esc(n.b)+'</p>':'')+
+        '<button class="del" data-i="'+idx+'">elimina</button>';
+      box.appendChild(el);
+    });
+  }
+  document.getElementById("notes").addEventListener("click",function(e){
+    var b=e.target.closest("[data-i]");if(!b)return;
+    if(confirm("Eliminare questo segreto?")){var a=loadNotes();a.splice(+b.getAttribute("data-i"),1);saveNotes(a);renderNotes();}
+  });
+  document.getElementById("addBtn").onclick=function(){
+    var t=document.getElementById("nTitle").value.trim(), b=document.getElementById("nBody").value.trim();
+    if(!t&&!b)return;
+    var a=loadNotes();a.unshift({t:t,b:b,ts:Date.now()});saveNotes(a);
+    document.getElementById("nTitle").value="";document.getElementById("nBody").value="";renderNotes();
+  };
+  document.getElementById("changePin").onclick=function(){
+    if(confirm("Vuoi cambiare il codice? I segreti restano, ma dovrai scegliere un nuovo codice ora.")){
+      // ri-cifra i dati col nuovo pin dopo averlo impostato: salvo i dati in chiaro in memoria
+      var notes=loadNotes();
+      // imposta nuovo pin
+      lockVault();
+      lsd(KPIN); // obbliga setup
+      // tieni i dati: li ri-cifreremo quando il nuovo pin è pronto
+      pendingNotes=notes;
+      startMode();setMsg("scegli il nuovo codice",'ok');
+    }
+  };
+  var pendingNotes=null;
+
+  function openVault(){
+    document.getElementById("lockView").style.display="none";
+    var v=document.getElementById("vaultView");v.style.display="block";
+    viconEl.classList.add("open");
+    // se stavamo cambiando pin, ri-cifra i vecchi dati col nuovo sessionPin
+    if(pendingNotes){saveNotes(pendingNotes);pendingNotes=null;}
+    renderNotes();
+  }
+  function lockVault(){
+    document.getElementById("vaultView").style.display="none";
+    document.getElementById("lockView").style.display="block";
+    viconEl.classList.remove("open");sessionPin="";startMode();
+  }
+  document.getElementById("lockBtn").onclick=lockVault;
+
+  // avvio
+  startMode();
+})();
+</script>
+</body>
+</html>

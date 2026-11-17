@@ -113,6 +113,7 @@
   <button class="btn primary" id="locBtn">📍 la mia posizione</button>
   <button class="btn" id="scanBtn">scansiona qui</button>
   <button class="btn" id="scoutBtn" style="border-color:rgba(31,224,196,.5);color:var(--accent)">📍 segna qui</button>
+  <button class="btn" id="clearMineBtn" style="border-color:rgba(255,59,92,.4);color:var(--live)">🗑 svuota</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -352,6 +353,12 @@
     },function(){toast("posizione non presa, riprova",true);},{enableHighAccuracy:true,timeout:10000,maximumAge:0});
   };
   renderMine();
+
+  document.getElementById("clearMineBtn").onclick=function(){
+    var a=loadMine();
+    if(!a.length){toast("non hai segnalazioni da cancellare");return;}
+    if(confirm("Cancellare tutte le tue "+a.length+" telecamere segnate?")){saveMine([]);renderMine();toast("segnalazioni cancellate");}
+  };
 
   // primo avvio
   toast("Benvenuto. Cerca un luogo o usa 📍 la tua posizione.",false);

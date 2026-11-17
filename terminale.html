@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Terminale">
+<title>Terminale</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root{
+    --bg:#060a08; --fg:#9fffd8; --dim:#3f7a63; --accent:#1fe0c4; --live:#ff5d73; --warn:#ffd24a;
+    --mono:"Space Mono",ui-monospace,Menlo,Consolas,monospace;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--mono);background:
+      radial-gradient(1000px 600px at 50% 0%,rgba(31,224,196,.05),transparent 60%),var(--bg);
+    color:var(--fg);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100dvh}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:40;
+    background:repeating-linear-gradient(to bottom,rgba(159,255,216,.04) 0 1px,transparent 1px 3px)}
+  a{color:var(--accent)}
+
+  .bar{display:flex;align-items:center;gap:10px;border-bottom:1px solid #123;
+    padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px));
+    background:rgba(6,10,8,.8)}
+  .back{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;border:1px solid #1c3a30;
+    color:var(--fg);text-decoration:none;padding:7px 10px;border-radius:7px;background:#0a140f}
+  .bar .dots{display:flex;gap:6px;margin-left:2px}
+  .bar .dots i{width:10px;height:10px;border-radius:50%}
+  .d1{background:#ff5f56}.d2{background:#ffbd2e}.d3{background:#27c93f}
+  .bar .ttl{margin-left:auto;font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+
+  .term{flex:1;overflow-y:auto;padding:14px max(12px,env(safe-area-inset-left,0px)) 10px;
+    font-size:.86rem;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+  .ln{margin:0}
+  .ln.cmd{color:#eafff6}.ln.cmd b{color:var(--accent)}
+  .ln.dim{color:var(--dim)}.ln.ok{color:var(--accent)}.ln.err{color:var(--live)}.ln.warn{color:var(--warn)}
+  .cursor{display:inline-block;width:9px;height:1.05em;background:var(--accent);vertical-align:-2px;
+    animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .inputline{display:flex;align-items:center;gap:8px;border-top:1px solid #123;
+    padding:10px max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));
+    background:rgba(6,10,8,.9)}
+  .prompt{color:var(--accent);font-weight:700}
+  .inputline input{flex:1;min-width:0;background:transparent;border:0;color:#eafff6;
+    font-family:var(--mono);font-size:.9rem;caret-color:var(--accent)}
+  .inputline input:focus{outline:none}
+  @media (prefers-reduced-motion: reduce){.cursor{animation:none}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <a class="back" href="index.html">&lsaquo; QG</a>
+  <div class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></div>
+  <span class="ttl">terminale sicuro</span>
+</div>
+
+<div class="term" id="term"></div>
+
+<form class="inputline" id="form" autocomplete="off">
+  <span class="prompt">QG&gt;</span>
+  <input id="cmd" aria-label="comando" autocapitalize="off" autocomplete="off" spellcheck="false" enterkeyhint="go">
+</form>
+
+<script>
+(function(){
+  "use strict";
+  var term=document.getElementById("term");
+  var input=document.getElementById("cmd");
+  var history=[], hpos=-1;
+
+  function line(text,cls){
+    var p=document.createElement("p");p.className="ln"+(cls?" "+cls:"");p.textContent=text;
+    term.appendChild(p);term.scrollTop=term.scrollHeight;return p;
+  }
+  function htmlLine(html,cls){
+    var p=document.createElement("p");p.className="ln"+(cls?" "+cls:"");p.innerHTML=html;
+    term.appendChild(p);term.scrollTop=term.scrollHeight;return p;
+  }
+  function blank(){line(" ");}
+
+  // stampa a macchina una sequenza di righe
+  function typeLines(lines,done){
+    var i=0;
+    (function next(){
+      if(i>=lines.length){if(done)done();return;}
+      var item=lines[i++];
+      line(item.t,item.c);
+      setTimeout(next, item.d||140);
+    })();
+  }
+
+  var NAMES1=["Ombra","Fantasma","Volpe","Corvo","Lupo","Spettro","Gatto","Falco","Serpe","Eco"];
+  var NAMES2=["Silenziosa","di Mezzanotte","d'Argento","Nera","Veloce","Invisibile","del Nord","Scarlatta"];
+  function rnd(a){return a[Math.floor(Math.random()*a.length)];}
+
+  var MISSIONS=[
+    "Recuperare il taccuino prima dell'alba. Nessuna traccia.",
+    "Entrare dall'ingresso di servizio. Finestra: 4 minuti.",
+    "Scambiare la valigetta al binario 9. Parola d'ordine: pioggia.",
+    "Disattivare l'allarme al terzo piano. Guardia in pausa alle 23:40.",
+    "Seguire il corriere fino al deposito. Restare invisibili."
+  ];
+
+  var COMMANDS={
+    aiuto:function(){
+      line("comandi disponibili:","dim");
+      [["aiuto","questa lista"],
+       ["scansione","cerca dispositivi nella rete"],
+       ["telecamere","apri il radar delle telecamere"],
+       ["cassaforte","apri la cassaforte"],
+       ["stato","stato del sistema"],
+       ["ora","data e ora attuali"],
+       ["missione","ricevi una missione"],
+       ["nomeincodice","genera un nome in codice"],
+       ["matrix","attiva la pioggia di codice"],
+       ["autodistruzione","(scherzo) sequenza di autodistruzione"],
+       ["pulisci","svuota lo schermo"]
+      ].forEach(function(c){htmlLine('  <b style="color:#1fe0c4">'+c[0]+'</b>  '+c[1]);});
+    },
+    help:function(){COMMANDS.aiuto();},
+    scansione:function(){
+      line("avvio scansione rete...","dim");
+      var devs=["router-QG","telefono-agente","telecamera-01","sensore-porta","nodo-sconosciuto ("+Math.floor(Math.random()*254+1)+")"];
+      typeLines(devs.map(function(d){return {t:"  trovato: "+d,c:"ok",d:260};}),function(){
+        line("scansione completata. "+devs.length+" dispositivi.","dim");
+      });
+    },
+    telecamere:function(){line("apro il radar...","ok");setTimeout(function(){location.href="radar.html";},700);},
+    cassaforte:function(){line("apro la cassaforte...","ok");setTimeout(function(){location.href="cassaforte.html";},700);},
+    stato:function(){
+      line("STATO SISTEMA","dim");
+      line("  alimentazione .... OK","ok");
+      line("  rete ............. cifrata","ok");
+      line("  tracce ........... nessuna","ok");
+      line("  batteria agente .. "+(Math.floor(Math.random()*40)+60)+"%","ok");
+    },
+    ora:function(){var d=new Date();line("  "+d.toLocaleString("it-IT"),"ok");},
+    data:function(){COMMANDS.ora();},
+    missione:function(){
+      line("decifro ordine di missione...","dim");
+      setTimeout(function(){line("MISSIONE: "+rnd(MISSIONS),"warn");},500);
+    },
+    nomeincodice:function(){line("nome in codice assegnato: "+rnd(NAMES1)+" "+rnd(NAMES2),"ok");},
+    matrix:function(){line("pioggia di codice attivata (tocca lo schermo per fermarla)","ok");startMatrix();},
+    autodistruzione:function(){
+      line("ATTENZIONE: sequenza di autodistruzione","err");
+      var n=3;
+      (function cd(){
+        if(n<=0){line("...","dim");setTimeout(function(){line("annullata. non distruggiamo il quartier generale, ovvio.","ok");},500);return;}
+        line(n+"...","err");n--;setTimeout(cd,700);
+      })();
+    },
+    pulisci:function(){term.innerHTML="";},
+    clear:function(){term.innerHTML="";}
+  };
+
+  function run(raw){
+    var cmd=raw.trim().toLowerCase();
+    htmlLine('<span class="prompt" style="color:#1fe0c4">QG&gt;</span> '+escapeHtml(raw),"cmd");
+    if(!cmd)return;
+    history.unshift(raw);if(history.length>40)history.pop();hpos=-1;
+    if(COMMANDS[cmd]){COMMANDS[cmd]();}
+    else{line('comando sconosciuto: "'+cmd+'". scrivi  aiuto','err');}
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
+
+  document.getElementById("form").addEventListener("submit",function(e){
+    e.preventDefault();var v=input.value;input.value="";run(v);
+  });
+  input.addEventListener("keydown",function(e){
+    if(e.key==="ArrowUp"){if(history.length){hpos=Math.min(hpos+1,history.length-1);input.value=history[hpos]||"";}e.preventDefault();}
+    else if(e.key==="ArrowDown"){hpos=Math.max(hpos-1,-1);input.value=hpos>=0?history[hpos]:"";e.preventDefault();}
+  });
+  term.addEventListener("click",function(){input.focus();});
+
+  // --- effetto matrix opzionale ---
+  var mcanvas=null,mraf=0;
+  function startMatrix(){
+    if(mcanvas)return;
+    mcanvas=document.createElement("canvas");
+    mcanvas.style.cssText="position:fixed;inset:0;z-index:30;pointer-events:none;opacity:.5";
+    document.body.appendChild(mcanvas);
+    var ctx=mcanvas.getContext("2d"),W,H,cols,drops;
+    function resize(){W=mcanvas.width=innerWidth;H=mcanvas.height=innerHeight;cols=Math.floor(W/14);drops=[];for(var i=0;i<cols;i++)drops[i]=Math.random()*H;}
+    resize();
+    var chars="01ABCDEF<>/\\#$%".split("");
+    function draw(){
+      ctx.fillStyle="rgba(6,10,8,.12)";ctx.fillRect(0,0,W,H);
+      ctx.fillStyle="#1fe0c4";ctx.font="13px monospace";
+      for(var i=0;i<cols;i++){
+        ctx.fillText(chars[Math.floor(Math.random()*chars.length)],i*14,drops[i]);
+        drops[i]+=14;if(drops[i]>H&&Math.random()>0.975)drops[i]=0;
+      }
+      mraf=requestAnimationFrame(draw);
+    }
+    draw();
+    var stop=function(){cancelAnimationFrame(mraf);if(mcanvas){mcanvas.remove();mcanvas=null;}document.removeEventListener("click",stop);};
+    setTimeout(function(){document.addEventListener("click",stop);},300);
+  }
+
+  // boot
+  typeLines([
+    {t:"QUARTIER GENERALE // terminale sicuro v2.6",c:"dim",d:200},
+    {t:"accesso in corso...",c:"dim",d:450},
+    {t:"identità verificata. benvenuto, agente.",c:"ok",d:300},
+    {t:" ",c:"",d:120},
+    {t:"scrivi  aiuto  per l'elenco dei comandi.",c:"dim",d:60}
+  ],function(){input.focus();});
+})();
+</script>
+</body>
+</html>

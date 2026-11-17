@@ -120,6 +120,9 @@
   <button class="btn" id="scanBtn">scansiona qui</button>
   <button class="btn" id="scoutBtn" style="border-color:rgba(31,224,196,.5);color:var(--accent)">📍 segna qui</button>
   <button class="btn" id="clearMineBtn" style="border-color:rgba(255,59,92,.4);color:var(--live)">🗑 svuota</button>
+  <select id="filtro" class="btn" style="padding:8px 10px" aria-label="filtro tipo"><option value="tutte">tutte</option><option value="ALPR">targhe (ALPR)</option><option value="dome">dome</option><option value="fisse">fisse</option><option value="altre">altre</option></select>
+  <button class="btn" id="autoBtn">auto</button>
+  <button class="btn" id="exportBtn">esporta</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -215,6 +218,7 @@
 
   // ---------- SCAN (Overpass) ----------
   var scanning=false;
+  var lastEls=[];
   function scan(){
     if(scanning)return;
     var b=map.getBounds();
@@ -232,7 +236,8 @@
       if(!r.ok)throw new Error("overpass "+r.status);
       return r.json();
     }).then(function(d){
-      renderCams(d.elements||[]);
+      lastEls=d.elements||[];
+      renderCams(lastEls);
     }).catch(function(err){
       toast("server occupato, riprova tra poco",true);
       document.getElementById("scanst").textContent="errore";
@@ -253,6 +258,9 @@
         dist:haversine(ref.lat,ref.lng,lat,lon),
         dir:bearing(ref.lat,ref.lng,lat,lon)};
     }).filter(Boolean);
+    function catOf(t){var st=((t["surveillance:type"]||"")+"").toLowerCase(),ct=((t["camera:type"]||"")+"").toLowerCase();if(st==="alpr"||st==="anpr")return "ALPR";if(ct==="dome")return "dome";if(ct==="fixed")return "fisse";return "altre";}
+    var _f=document.getElementById("filtro");_f=_f?_f.value:"tutte";
+    if(_f!=="tutte")cams=cams.filter(function(c){return catOf(c.tags)===_f;});
 
     cams.forEach(function(c){
       var priv=(c.tags["surveillance"]==="outdoor"||c.tags["surveillance"]==="indoor")&&c.tags["surveillance:zone"]!=="public";
@@ -365,6 +373,52 @@
     var a=loadMine();
     if(!a.length){toast("non hai segnalazioni da cancellare");return;}
     if(confirm("Cancellare tutte le tue "+a.length+" telecamere segnate?")){saveMine([]);renderMine();toast("segnalazioni cancellate");}
+  };
+
+  // filtro
+  var _fs=document.getElementById("filtro");
+  if(_fs)_fs.onchange=function(){renderCams(lastEls);};
+
+  // scansione automatica
+  var autoOn=false, watchId=null, lastScanAt=0, lastScanLL=null;
+  document.getElementById("autoBtn").onclick=function(){
+    autoOn=!autoOn;
+    this.textContent=autoOn?"auto: on":"auto";
+    this.style.color=autoOn?"var(--accent)":"";
+    this.style.borderColor=autoOn?"rgba(31,224,196,.5)":"";
+    if(autoOn){
+      if(!navigator.geolocation){toast("GPS non disponibile",true);autoOn=false;this.textContent="auto";return;}
+      toast("scansione automatica attiva");
+      watchId=navigator.geolocation.watchPosition(function(p){
+        var lat=p.coords.latitude, lng=p.coords.longitude;
+        setMe(lat,lng);
+        var now=Date.now();
+        var moved=lastScanLL?haversine(lastScanLL.lat,lastScanLL.lng,lat,lng):1e9;
+        if(moved>50 || now-lastScanAt>45000){
+          lastScanAt=now; lastScanLL={lat:lat,lng:lng};
+          map.setView([lat,lng]); scan();
+        }
+      },function(){},{enableHighAccuracy:true,maximumAge:10000,timeout:15000});
+    }else{
+      if(watchId!=null)navigator.geolocation.clearWatch(watchId);
+      watchId=null;toast("scansione automatica spenta");
+    }
+  };
+
+  // esporta le mie scoperte in GeoJSON
+  document.getElementById("exportBtn").onclick=function(){
+    var a=loadMine();
+    if(!a.length){toast("nessuna scoperta da esportare",true);return;}
+    var fc={type:"FeatureCollection",features:a.map(function(p){
+      return {type:"Feature",geometry:{type:"Point",coordinates:[p.lon,p.lat]},
+        properties:{"man_made":"surveillance","surveillance:type":"camera","rilevata":new Date(p.ts).toISOString()}};
+    })};
+    var blob=new Blob([JSON.stringify(fc,null,2)],{type:"application/geo+json"});
+    var url=URL.createObjectURL(blob);
+    var link=document.createElement("a");link.href=url;link.download="telecamere-scoperte.geojson";
+    document.body.appendChild(link);link.click();link.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},2000);
+    toast("esportate "+a.length+" scoperte");
   };
 
   // primo avvio

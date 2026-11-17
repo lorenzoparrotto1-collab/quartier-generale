@@ -54,6 +54,8 @@
   .inputline input{flex:1;min-width:0;background:transparent;border:0;color:#eafff6;
     font-family:var(--mono);font-size:.9rem;caret-color:var(--accent)}
   .inputline input:focus{outline:none}
+  .inputline .sendbtn{flex:none;border:1px solid #1c3a30;background:#0a140f;color:var(--accent);font-family:var(--mono);font-size:1rem;padding:7px 14px;border-radius:8px;cursor:pointer}
+  .inputline .sendbtn:active{transform:scale(.95)}
   @media (prefers-reduced-motion: reduce){.cursor{animation:none}}
 </style>
 </head>
@@ -69,6 +71,7 @@
 <form class="inputline" id="form" autocomplete="off">
   <span class="prompt">QG&gt;</span>
   <input id="cmd" aria-label="comando" autocapitalize="off" autocomplete="off" spellcheck="false" enterkeyhint="go">
+  <button type="submit" class="sendbtn" aria-label="esegui">&#9654;</button>
 </form>
 
 <script>

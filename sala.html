@@ -158,6 +158,7 @@
   .feed.alarm{border-color:var(--live)}
   .screen{position:relative;aspect-ratio:16/10;background:#060a0e;overflow:hidden}
   .screen canvas{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:.9}
+  .feedimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;background:#060a0e}
   .screen .vig{position:absolute;inset:0;background:radial-gradient(120% 120% at 50% 40%,transparent 55%,rgba(0,0,0,.6))}
   .screen.off{display:grid;place-items:center}
   .screen.off .nosig{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:#35484f}
@@ -420,7 +421,7 @@
       var state=cam.on?(cam.alarm?"movimento":"live"):"off";
       f.innerHTML=
         '<div class="screen '+(cam.on?"":"off")+'">'+
-          (cam.on?'<canvas></canvas><div class="vig"></div>':'<span class="nosig">NO SIGNAL</span>')+
+          (cam.on?((cam.url?'<img class="feedimg" src="'+esc(cam.url)+'" alt="" onerror="this.style.display=&#39;none&#39;">':'<canvas></canvas>')+'<div class="vig"></div>'):'<span class="nosig">NO SIGNAL</span>')+
           '<div class="ovl">'+
             '<div class="top">'+
               '<span class="rec '+(cam.on?"":"off")+'"><i></i>'+(cam.on?"REC":"OFF")+'</span>'+
@@ -435,7 +436,7 @@
         '</div>';
       f.onclick=function(){select(cam.id);};
       feedsEl.appendChild(f);
-      if(cam.on){startCanvas(cam,f.querySelector("canvas"));}
+      if(cam.on&&!cam.url){var _cv=f.querySelector("canvas");if(_cv)startCanvas(cam,_cv);}
     });
 
     // markers

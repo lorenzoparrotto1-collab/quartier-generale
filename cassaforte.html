@@ -149,34 +149,44 @@
 <script>
 (function(){
   "use strict";
-  var KPIN="qg_vault_check", KDATA="qg_vault_data";
-  var TOKEN="VAULT-OK-7";
-  var pin="";            // codice digitato ora
-  var mode="";           // "unlock" | "set1" | "set2"
-  var firstPin="";       // per impostazione
-  var sessionPin="";     // codice valido in sessione (per salvare)
+  var KSALT="qg_vault_salt", KCHK="qg_vault_check", KDATA="qg_vault_data";
+  var TOKEN="VAULT-OK";
+  var sessionKey=null, mode="", firstPin="", pin="", pendingNotes=null;
 
-  // --- cifratura giocosa (XOR + base64): non è sicurezza vera, è un lucchetto da gioco ---
-  function enc(str,key){
-    var o="";for(var i=0;i<str.length;i++)o+=String.fromCharCode(str.charCodeAt(i)^key.charCodeAt(i%key.length));
-    try{return btoa(unescape(encodeURIComponent(o)));}catch(e){return "";}
-  }
-  function dec(b64,key){
-    try{var r=decodeURIComponent(escape(atob(b64)));var o="";
-      for(var i=0;i<r.length;i++)o+=String.fromCharCode(r.charCodeAt(i)^key.charCodeAt(i%key.length));return o;
-    }catch(e){return null;}
-  }
+  var dotsEl=document.getElementById("dots"), msgEl=document.getElementById("msg");
+  var leadEl=document.getElementById("lockLead"), viconEl=document.getElementById("vicon");
+
   function ls(k){try{return localStorage.getItem(k);}catch(e){return null;}}
   function lss(k,v){try{localStorage.setItem(k,v);}catch(e){}}
   function lsd(k){try{localStorage.removeItem(k);}catch(e){}}
-  function hasPin(){return !!ls(KPIN);}
+  function hasVault(){return !!ls(KCHK);}
 
-  // --- UI tastierino ---
-  var dotsEl=document.getElementById("dots"), msgEl=document.getElementById("msg");
-  var leadEl=document.getElementById("lockLead"), viconEl=document.getElementById("vicon");
+  // --- crypto vera: PBKDF2 + AES-GCM (Web Crypto) ---
+  function b64(buf){var b=new Uint8Array(buf),s="";for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s);}
+  function ub64(str){return Uint8Array.from(atob(str),function(c){return c.charCodeAt(0);});}
+  function deriveKey(code,salt){
+    var enc=new TextEncoder();
+    return crypto.subtle.importKey("raw",enc.encode(code),"PBKDF2",false,["deriveKey"]).then(function(base){
+      return crypto.subtle.deriveKey(
+        {name:"PBKDF2",salt:salt,iterations:150000,hash:"SHA-256"},
+        base,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+    });
+  }
+  function encrypt(key,str){
+    var iv=crypto.getRandomValues(new Uint8Array(12));
+    return crypto.subtle.encrypt({name:"AES-GCM",iv:iv},key,new TextEncoder().encode(str)).then(function(ct){
+      return JSON.stringify({iv:b64(iv),ct:b64(ct)});
+    });
+  }
+  function decrypt(key,payload){
+    try{var o=JSON.parse(payload);}catch(e){return Promise.resolve(null);}
+    return crypto.subtle.decrypt({name:"AES-GCM",iv:ub64(o.iv)},key,ub64(o.ct))
+      .then(function(pt){return new TextDecoder().decode(pt);})
+      .catch(function(){return null;});
+  }
+
   function renderDots(){
-    var n=Math.max(pin.length,0);
-    var html="";for(var i=0;i<Math.max(n,4);i++)html+='<i class="'+(i<pin.length?"on":"")+'"></i>';
+    var html="";for(var i=0;i<Math.max(pin.length,4);i++)html+='<i class="'+(i<pin.length?"on":"")+'"></i>';
     dotsEl.innerHTML=html;
   }
   function setMsg(t,cls){msgEl.textContent=t||"";msgEl.className="msg"+(cls?" "+cls:"");}
@@ -184,7 +194,7 @@
 
   function startMode(){
     pin="";firstPin="";
-    if(hasPin()){mode="unlock";leadEl.innerHTML="Inserisci il tuo codice.";document.getElementById("forgot").hidden=false;}
+    if(hasVault()){mode="unlock";leadEl.innerHTML="Inserisci il tuo codice.";document.getElementById("forgot").hidden=false;}
     else{mode="set1";leadEl.innerHTML="Prima volta: <b>scegli un codice</b> (almeno 4 cifre).";document.getElementById("forgot").hidden=true;}
     setMsg("");renderDots();
   }
@@ -192,29 +202,40 @@
   function press(k){
     if(k==="del"){pin=pin.slice(0,-1);setMsg("");renderDots();return;}
     if(k==="ok"){submit();return;}
-    if(pin.length>=8)return;
+    if(pin.length>=10)return;
     pin+=k;setMsg("");renderDots();
-    if(mode==="unlock"){ /* niente auto: preme ok */ }
   }
+
   function submit(){
     if(mode==="set1"){
-      if(pin.length<4){setMsg("almeno 4 cifre",'err');shake();return;}
-      firstPin=pin;pin="";mode="set2";leadEl.innerHTML="Ripeti il codice per conferma.";renderDots();setMsg("");
-      return;
+      if(pin.length<4){setMsg("almeno 4 cifre","err");shake();return;}
+      firstPin=pin;pin="";mode="set2";leadEl.innerHTML="Ripeti il codice per conferma.";renderDots();setMsg("");return;
     }
     if(mode==="set2"){
-      if(pin!==firstPin){setMsg("non coincide, riprova",'err');shake();pin="";firstPin="";mode="set1";
+      if(pin!==firstPin){setMsg("non coincide, riprova","err");shake();pin="";firstPin="";mode="set1";
         leadEl.innerHTML="Scegli un codice (almeno 4 cifre).";renderDots();return;}
-      // salva
-      lss(KPIN, enc(TOKEN,pin));
-      if(!ls(KDATA))lss(KDATA, enc(JSON.stringify([]),pin));
-      sessionPin=pin;openVault();return;
+      setMsg("creo la cassaforte...","");
+      var salt=crypto.getRandomValues(new Uint8Array(16));
+      deriveKey(firstPin,salt).then(function(key){
+        sessionKey=key;
+        return encrypt(key,TOKEN).then(function(chk){
+          lss(KSALT,b64(salt));lss(KCHK,chk);
+          return encrypt(key,JSON.stringify(pendingNotes||[]));
+        }).then(function(data){lss(KDATA,data);pendingNotes=null;openVault();});
+      }).catch(function(){setMsg("errore, riprova","err");});
+      return;
     }
     if(mode==="unlock"){
-      if(pin.length<4){setMsg("codice troppo corto",'err');shake();return;}
-      var chk=dec(ls(KPIN),pin);
-      if(chk===TOKEN){sessionPin=pin;openVault();}
-      else{setMsg("codice errato",'err');shake();pin="";renderDots();}
+      if(pin.length<4){setMsg("codice troppo corto","err");shake();return;}
+      setMsg("verifico...","");
+      var salt;try{salt=ub64(ls(KSALT));}catch(e){setMsg("dati corrotti","err");return;}
+      var entered=pin;
+      deriveKey(entered,salt).then(function(key){
+        return decrypt(key,ls(KCHK)).then(function(chk){
+          if(chk===TOKEN){sessionKey=key;setMsg("");openVault();}
+          else{setMsg("codice errato","err");shake();pin="";renderDots();}
+        });
+      }).catch(function(){setMsg("codice errato","err");shake();pin="";renderDots();});
     }
   }
 
@@ -229,68 +250,77 @@
   });
 
   document.getElementById("forgot").onclick=function(){
-    if(confirm("Se hai dimenticato il codice, l'unico modo è azzerare la cassaforte. Si perde TUTTO il contenuto. Procedere?")){
-      lsd(KPIN);lsd(KDATA);startMode();setMsg("cassaforte azzerata",'ok');
+    if(confirm("Se hai dimenticato il codice, l'unico modo e azzerare la cassaforte. Si perde TUTTO il contenuto. Procedere?")){
+      lsd(KSALT);lsd(KCHK);lsd(KDATA);sessionKey=null;startMode();setMsg("cassaforte azzerata","ok");
     }
   };
 
-  // --- VAULT ---
-  function loadNotes(){var d=dec(ls(KDATA),sessionPin);if(d===null)return [];try{var a=JSON.parse(d);return Array.isArray(a)?a:[];}catch(e){return [];}}
-  function saveNotes(a){lss(KDATA, enc(JSON.stringify(a),sessionPin));}
+  function loadNotes(){
+    return decrypt(sessionKey,ls(KDATA)).then(function(d){
+      if(d===null)return [];try{var a=JSON.parse(d);return Array.isArray(a)?a:[];}catch(e){return [];}
+    });
+  }
+  function saveNotes(a){return encrypt(sessionKey,JSON.stringify(a)).then(function(x){lss(KDATA,x);});}
   function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
 
   function renderNotes(){
-    var a=loadNotes(), box=document.getElementById("notes");
-    if(!a.length){box.innerHTML='<div class="empty">La cassaforte è vuota.<br>Scrivi sopra il tuo primo segreto e tocca <b>custodisci</b>.</div>';return;}
-    box.innerHTML="";
-    a.forEach(function(n,idx){
-      var el=document.createElement("div");el.className="note";
-      el.innerHTML='<h3>'+esc(n.t||"(senza titolo)")+'</h3>'+(n.b?'<p>'+esc(n.b)+'</p>':'')+
-        '<button class="del" data-i="'+idx+'">elimina</button>';
-      box.appendChild(el);
+    return loadNotes().then(function(a){
+      var box=document.getElementById("notes");
+      if(!a.length){box.innerHTML='<div class="empty">La cassaforte e vuota.<br>Scrivi sopra il tuo primo segreto e tocca <b>custodisci</b>.</div>';return;}
+      box.innerHTML="";
+      a.forEach(function(n,idx){
+        var el=document.createElement("div");el.className="note";
+        el.innerHTML='<h3>'+esc(n.t||"(senza titolo)")+'</h3>'+(n.b?'<p>'+esc(n.b)+'</p>':'')+
+          '<button class="del" data-i="'+idx+'">elimina</button>';
+        box.appendChild(el);
+      });
     });
   }
   document.getElementById("notes").addEventListener("click",function(e){
     var b=e.target.closest("[data-i]");if(!b)return;
-    if(confirm("Eliminare questo segreto?")){var a=loadNotes();a.splice(+b.getAttribute("data-i"),1);saveNotes(a);renderNotes();}
+    if(confirm("Eliminare questo segreto?")){
+      loadNotes().then(function(a){a.splice(+b.getAttribute("data-i"),1);return saveNotes(a);}).then(renderNotes);
+    }
   });
   document.getElementById("addBtn").onclick=function(){
     var t=document.getElementById("nTitle").value.trim(), b=document.getElementById("nBody").value.trim();
     if(!t&&!b)return;
-    var a=loadNotes();a.unshift({t:t,b:b,ts:Date.now()});saveNotes(a);
-    document.getElementById("nTitle").value="";document.getElementById("nBody").value="";renderNotes();
+    loadNotes().then(function(a){a.unshift({t:t,b:b,ts:Date.now()});return saveNotes(a);}).then(function(){
+      document.getElementById("nTitle").value="";document.getElementById("nBody").value="";renderNotes();
+    });
   };
   document.getElementById("changePin").onclick=function(){
-    if(confirm("Vuoi cambiare il codice? I segreti restano, ma dovrai scegliere un nuovo codice ora.")){
-      // ri-cifra i dati col nuovo pin dopo averlo impostato: salvo i dati in chiaro in memoria
-      var notes=loadNotes();
-      // imposta nuovo pin
-      lockVault();
-      lsd(KPIN); // obbliga setup
-      // tieni i dati: li ri-cifreremo quando il nuovo pin è pronto
-      pendingNotes=notes;
-      startMode();setMsg("scegli il nuovo codice",'ok');
+    if(confirm("Vuoi cambiare il codice? I segreti restano, dovrai scegliere un nuovo codice ora.")){
+      loadNotes().then(function(notes){
+        pendingNotes=notes;
+        lsd(KSALT);lsd(KCHK);
+        document.getElementById("vaultView").style.display="none";
+        document.getElementById("lockView").style.display="block";
+        viconEl.classList.remove("open");sessionKey=null;
+        startMode();setMsg("scegli il nuovo codice","ok");
+      });
     }
   };
-  var pendingNotes=null;
 
   function openVault(){
     document.getElementById("lockView").style.display="none";
-    var v=document.getElementById("vaultView");v.style.display="block";
+    document.getElementById("vaultView").style.display="block";
     viconEl.classList.add("open");
-    // se stavamo cambiando pin, ri-cifra i vecchi dati col nuovo sessionPin
-    if(pendingNotes){saveNotes(pendingNotes);pendingNotes=null;}
     renderNotes();
   }
   function lockVault(){
     document.getElementById("vaultView").style.display="none";
     document.getElementById("lockView").style.display="block";
-    viconEl.classList.remove("open");sessionPin="";startMode();
+    viconEl.classList.remove("open");sessionKey=null;startMode();
   }
   document.getElementById("lockBtn").onclick=lockVault;
 
-  // avvio
-  startMode();
+  if(!window.crypto||!crypto.subtle){
+    leadEl.innerHTML="Questa cassaforte richiede una connessione sicura (https).";
+    document.getElementById("pad").style.opacity=".4";
+  }else{
+    startMode();
+  }
 })();
 </script>
 </body>

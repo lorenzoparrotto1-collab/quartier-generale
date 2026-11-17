@@ -1,6 +1,6 @@
-const CACHE = 'qg-v2';
+const CACHE = 'qg-v3';
 const ASSETS = [
-  './', 'index.html', 'radar.html', 'sala.html', 'cassaforte.html', 'terminale.html',
+  './', 'index.html', 'radar.html', 'sala.html', 'cassaforte.html', 'terminale.html', 'bacheca.html',
   'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'
 ];
 self.addEventListener('install', (e) => {

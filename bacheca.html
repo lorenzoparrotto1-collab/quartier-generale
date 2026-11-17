@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<script>(function(){try{if(localStorage.getItem("qg_gate_hash")&&sessionStorage.getItem("qg_gate_open")!=="1"){location.replace("index.html");}}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0a0e13">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Parete">
+<title>Parete del colpo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root{
+    --bg:#0a0e13; --panel:#111820; --line:#1d2a36; --fg:#cfe3e8; --muted:#7f96a4;
+    --accent:#1fe0c4; --live:#ff3b5c; --paper:#efe4c4; --paper2:#e7d9b0; --ink:#2a2318;
+    --mono:"Space Mono",ui-monospace,Menlo,Consolas,monospace; --sans:"Inter",system-ui,sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--fg);overflow:hidden;
+    -webkit-font-smoothing:antialiased;touch-action:none}
+
+  .bar{position:absolute;z-index:10;top:0;left:0;right:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:calc(9px + env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) 9px max(10px,env(safe-area-inset-left,0px));
+    background:linear-gradient(180deg,rgba(10,14,19,.95),rgba(10,14,19,.6))}
+  .back{font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;
+    border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:7px 10px;border-radius:8px;background:var(--panel)}
+  .btn{font-family:var(--mono);font-size:.64rem;letter-spacing:.06em;text-transform:uppercase;
+    border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:7px 10px;border-radius:8px;cursor:pointer}
+  .btn:active{transform:scale(.96)}
+  .btn.on{border-color:var(--accent);color:var(--accent)}
+  .ttl{font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-left:auto}
+
+  .scroll{position:absolute;inset:0;overflow:auto;-webkit-overflow-scrolling:touch}
+  .board{position:relative;width:2200px;height:1600px;
+    background:
+      radial-gradient(circle at 20% 30%,rgba(31,224,196,.04),transparent 40%),
+      repeating-linear-gradient(0deg,rgba(255,255,255,.012) 0 1px,transparent 1px 26px),
+      repeating-linear-gradient(90deg,rgba(255,255,255,.012) 0 1px,transparent 1px 26px),
+      #0c1218;}
+  svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+  .wire-hit{position:absolute;width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);
+    z-index:2;background:rgba(255,59,92,.0)}
+  .wire-hit.del{background:rgba(255,59,92,.25);border:1px solid var(--live);cursor:pointer}
+
+  .card{position:absolute;z-index:3;width:168px;background:var(--paper);color:var(--ink);
+    border-radius:4px;padding:12px 12px 14px;box-shadow:0 10px 22px rgba(0,0,0,.5),0 2px 4px rgba(0,0,0,.4);
+    font-family:var(--sans);cursor:grab;user-select:none;touch-action:none}
+  .card.alt{background:var(--paper2)}
+  .card:active{cursor:grabbing}
+  .card .pin{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:16px;height:16px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#ff8aa0,#d41f3c);box-shadow:0 2px 4px rgba(0,0,0,.5)}
+  .card img{display:block;width:100%;border-radius:2px;margin-bottom:8px;pointer-events:none}
+  .card .txt{font-size:.82rem;line-height:1.35;white-space:pre-wrap;word-break:break-word;min-height:8px}
+  .card .tag{position:absolute;bottom:-9px;right:8px;font-family:var(--mono);font-size:.5rem;color:#8a7c5a}
+
+  .hint{position:absolute;z-index:9;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+    background:var(--panel);border:1px solid var(--line);color:var(--muted);font-family:var(--mono);font-size:.62rem;
+    letter-spacing:.04em;padding:8px 12px;border-radius:9px;max-width:92vw;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none}
+  .hint.show{opacity:1}
+  .card.sel{outline:2px solid var(--accent);outline-offset:2px}
+  input[type=file]{display:none}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <a class="back" href="index.html">&lsaquo; QG</a>
+  <button class="btn" id="mNota">+ nota</button>
+  <button class="btn" id="mFoto">+ foto</button>
+  <button class="btn" id="mLink">collega</button>
+  <button class="btn" id="mDel">elimina</button>
+  <button class="btn" id="mClear">svuota</button>
+  <span class="ttl">Parete del colpo</span>
+</div>
+
+<div class="scroll" id="scroll">
+  <div class="board" id="board">
+    <svg class="wires" id="wires" viewBox="0 0 2200 1600" preserveAspectRatio="none"></svg>
+  </div>
+</div>
+
+<input type="file" id="file" accept="image/*">
+<div class="hint" id="hint"></div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY="qg_board_v1";
+  var board={cards:[],links:[]};
+  var mode="muovi";           // muovi | link | del
+  var linkFrom=null;
+  var scroll=document.getElementById("scroll");
+  var boardEl=document.getElementById("board");
+  var wires=document.getElementById("wires");
+  var hintEl=document.getElementById("hint");
+  var hintT=null;
+
+  function load(){try{var r=localStorage.getItem(KEY);if(r){var o=JSON.parse(r);if(o&&o.cards){board=o;}}}catch(e){}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(board));}catch(e){}}
+  function uid(){return "c"+Date.now().toString(36)+Math.floor(Math.random()*1000);}
+  function hint(t){hintEl.textContent=t;hintEl.classList.add("show");if(hintT)clearTimeout(hintT);hintT=setTimeout(function(){hintEl.classList.remove("show");},2200);}
+  function esc(s){return String(s==null?"":s);}
+
+  var els={}; // id -> element
+
+  function makeCard(c){
+    var el=document.createElement("div");
+    el.className="card"+(c.alt?" alt":"");
+    el.style.transform="translate("+c.x+"px,"+c.y+"px) rotate("+(c.r||0)+"deg)";
+    el.dataset.id=c.id;
+    var html='<span class="pin"></span>';
+    if(c.img)html+='<img src="'+c.img+'" alt="">';
+    html+='<div class="txt">'+esc(c.text)+'</div>';
+    if(c.tag)html+='<span class="tag">'+esc(c.tag)+'</span>';
+    el.innerHTML=html;
+    boardEl.appendChild(el);
+    els[c.id]=el;
+    attachDrag(el,c);
+    return el;
+  }
+
+  function render(){
+    // rimuovi vecchie card
+    Object.keys(els).forEach(function(id){if(els[id]&&els[id].parentNode)els[id].parentNode.removeChild(els[id]);});
+    els={};
+    board.cards.forEach(makeCard);
+    drawWires();
+  }
+
+  function centerOf(c){
+    var el=els[c.id]; var w=el?el.offsetWidth:168; var h=el?el.offsetHeight:90;
+    return {x:c.x+w/2, y:c.y+h/2};
+  }
+  function cardById(id){for(var i=0;i<board.cards.length;i++)if(board.cards[i].id===id)return board.cards[i];return null;}
+
+  function drawWires(){
+    // rimuovi hit precedenti
+    Array.prototype.slice.call(boardEl.querySelectorAll(".wire-hit")).forEach(function(n){n.remove();});
+    var svg="";
+    board.links.forEach(function(l,idx){
+      var a=cardById(l.a),b=cardById(l.b); if(!a||!b)return;
+      var pa=centerOf(a),pb=centerOf(b);
+      var mx=(pa.x+pb.x)/2, my=(pa.y+pb.y)/2 - 18;
+      svg+='<path d="M'+pa.x+' '+pa.y+' Q'+mx+' '+my+' '+pb.x+' '+pb.y+'" stroke="#ff3b5c" stroke-width="2" fill="none" opacity="0.85"/>';
+      // punto centrale per eliminare
+      var hit=document.createElement("div");
+      hit.className="wire-hit"+(mode==="del"?" del":"");
+      hit.style.left=((pa.x+pb.x)/2)+"px"; hit.style.top=((pa.y+pb.y)/2)+"px";
+      if(mode==="del"){hit.onclick=function(e){e.stopPropagation();board.links.splice(idx,1);save();render();};}
+      boardEl.appendChild(hit);
+    });
+    wires.innerHTML=svg;
+  }
+
+  // ---- drag ----
+  function attachDrag(el,c){
+    var startX,startY,ox,oy,moved,down=false;
+    el.addEventListener("pointerdown",function(e){
+      if(mode==="link"){ e.preventDefault(); handleLink(c); return; }
+      if(mode==="del"){ e.preventDefault(); if(confirm("Eliminare questo biglietto?")){removeCard(c.id);} return; }
+      down=true; moved=false;
+      startX=e.clientX; startY=e.clientY; ox=c.x; oy=c.y;
+      el.setPointerCapture(e.pointerId);
+      el.style.zIndex=50;
+    });
+    el.addEventListener("pointermove",function(e){
+      if(!down)return;
+      var dx=e.clientX-startX, dy=e.clientY-startY;
+      if(Math.abs(dx)+Math.abs(dy)>3)moved=true;
+      c.x=ox+dx; c.y=oy+dy;
+      el.style.transform="translate("+c.x+"px,"+c.y+"px) rotate("+(c.r||0)+"deg)";
+      drawWires();
+    });
+    el.addEventListener("pointerup",function(e){
+      if(!down)return; down=false; el.style.zIndex=3;
+      try{el.releasePointerCapture(e.pointerId);}catch(_){}
+      if(moved){save();}
+      else if(mode==="muovi"){ // tap senza spostamento = modifica testo
+        var t=prompt("Testo del biglietto:", c.text||"");
+        if(t!==null){c.text=t;save();render();}
+      }
+    });
+  }
+
+  function handleLink(c){
+    if(!linkFrom){linkFrom=c.id; if(els[c.id])els[c.id].classList.add("sel"); hint("ora tocca il secondo biglietto"); return;}
+    if(linkFrom===c.id){ if(els[c.id])els[c.id].classList.remove("sel"); linkFrom=null; hint("collegamento annullato"); return; }
+    board.links.push({a:linkFrom,b:c.id});
+    if(els[linkFrom])els[linkFrom].classList.remove("sel");
+    linkFrom=null; save(); render(); hint("collegati");
+  }
+
+  function removeCard(id){
+    board.cards=board.cards.filter(function(c){return c.id!==id;});
+    board.links=board.links.filter(function(l){return l.a!==id&&l.b!==id;});
+    save(); render();
+  }
+
+  // posizione "al centro" della vista attuale
+  function viewCenter(){
+    return {x:scroll.scrollLeft + scroll.clientWidth/2 - 84 + (Math.random()*40-20),
+            y:scroll.scrollTop + scroll.clientHeight/2 - 40 + (Math.random()*40-20)};
+  }
+  function addCard(opts){
+    var p=viewCenter();
+    var c={id:uid(), x:p.x, y:p.y, r:(Math.random()*8-4), text:opts.text||"", img:opts.img||null,
+           alt:Math.random()<0.5, tag:opts.tag||""};
+    board.cards.push(c); save(); render();
+    if(els[c.id])els[c.id].scrollIntoView({block:"center",inline:"center"});
+  }
+
+  // ---- toolbar ----
+  function setMode(m){
+    mode=m; linkFrom=null;
+    ["mLink","mDel"].forEach(function(id){document.getElementById(id).classList.remove("on");});
+    if(m==="link")document.getElementById("mLink").classList.add("on");
+    if(m==="del")document.getElementById("mDel").classList.add("on");
+    render();
+    if(m==="link")hint("tocca due biglietti per collegarli");
+    else if(m==="del")hint("tocca un biglietto o un filo per eliminarlo");
+  }
+  document.getElementById("mNota").onclick=function(){
+    var t=prompt("Scrivi sul biglietto:","");
+    if(t!==null){setMode("muovi");addCard({text:t});}
+  };
+  document.getElementById("mFoto").onclick=function(){document.getElementById("file").click();};
+  document.getElementById("file").onchange=function(e){
+    var f=e.target.files&&e.target.files[0]; if(!f)return;
+    fileToThumb(f,function(data){ setMode("muovi"); addCard({img:data, tag:"prova"}); });
+    e.target.value="";
+  };
+  document.getElementById("mLink").onclick=function(){setMode(mode==="link"?"muovi":"link");};
+  document.getElementById("mDel").onclick=function(){setMode(mode==="del"?"muovi":"del");};
+  document.getElementById("mClear").onclick=function(){
+    if(!board.cards.length){hint("la parete e gia vuota");return;}
+    if(confirm("Svuotare tutta la parete?")){board={cards:[],links:[]};save();render();}
+  };
+
+  function fileToThumb(file,cb){
+    var r=new FileReader();
+    r.onload=function(){
+      var img=new Image();
+      img.onload=function(){
+        var max=640,w=img.width,h=img.height;
+        if(w>h&&w>max){h=h*max/w;w=max;} else if(h>max){w=w*max/h;h=max;}
+        var cv=document.createElement("canvas");cv.width=w;cv.height=h;
+        cv.getContext("2d").drawImage(img,0,0,w,h);
+        cb(cv.toDataURL("image/jpeg",0.78));
+      };
+      img.onerror=function(){hint("immagine non valida");};
+      img.src=r.result;
+    };
+    r.readAsDataURL(file);
+  }
+
+  // avvio
+  load();
+  if(!board.cards.length){
+    // esempio iniziale
+    board.cards=[
+      {id:uid(),x:300,y:220,r:-3,text:"L'obiettivo",alt:false,tag:"caso"},
+      {id:uid(),x:620,y:340,r:2,text:"Dove colpire",alt:true,tag:""},
+      {id:uid(),x:420,y:520,r:-2,text:"Il piano B",alt:false,tag:""}
+    ];
+    board.links=[{a:board.cards[0].id,b:board.cards[1].id},{a:board.cards[1].id,b:board.cards[2].id}];
+    save();
+  }
+  render();
+  setTimeout(function(){ if(els[board.cards[0].id]) els[board.cards[0].id].scrollIntoView({block:"center",inline:"center"}); },50);
+  hint("trascina i biglietti. Tocca un biglietto per cambiarne il testo.");
+})();
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+</body>
+</html>

@@ -150,11 +150,6 @@
     </div>
   </div>
 
-  <form class="dock" id="dock" autocomplete="off">
-    <button type="button" class="mic" id="mic" title="parla" hidden>&#127908;</button>
-    <input id="say" placeholder="parla o scrivi a J.A.R.V.I.S..." autocapitalize="off" enterkeyhint="send">
-    <button type="submit" class="send">invia</button>
-  </form>
 </div>
 
 <div class="activate" id="activate">
@@ -270,15 +265,21 @@
 
   // ---------- voce ----------
   function voices(){try{return speechSynthesis.getVoices()||[];}catch(e){return [];}}
-  function pickVoice(){var v=voices();return v.filter(function(x){return /it[-_]IT/i.test(x.lang);})[0]||v.filter(function(x){return /^it/i.test(x.lang);})[0]||null;}
+  function pickVoice(){
+    var v=voices(), pref=["alice","federica","luca","italia","google ita"];
+    for(var n=0;n<pref.length;n++){var f=v.filter(function(x){return /it/i.test(x.lang)&&x.name.toLowerCase().indexOf(pref[n])>=0;})[0];if(f)return f;}
+    return v.filter(function(x){return /it[-_]IT/i.test(x.lang);})[0]||v.filter(function(x){return /^it/i.test(x.lang);})[0]||null;
+  }
   function speak(text,then){
     subEl.textContent=text;
     try{
       if(!("speechSynthesis" in window)){if(then)then();return;}
-      var u=new SpeechSynthesisUtterance(text);u.lang="it-IT";u.rate=1;u.pitch=1;
+      var u=new SpeechSynthesisUtterance(text);
+      u.lang="it-IT";u.rate=0.98;u.pitch=1.02;
       var vo=pickVoice();if(vo)u.voice=vo;
-      u.onstart=function(){speaking=true;stateEl.textContent="risposta";};
-      u.onend=function(){speaking=false;stateEl.textContent=listening?"ascolto":"in linea";if(then)then();};
+      u.onstart=function(){speaking=true;stateEl.textContent="risposta";pauseRec();};
+      u.onend=function(){speaking=false;stateEl.textContent="in ascolto";if(then)then();resumeRec();};
+      u.onerror=function(){speaking=false;if(then)then();resumeRec();};
       speechSynthesis.cancel();speechSynthesis.speak(u);
     }catch(e){if(then)then();}
   }
@@ -298,28 +299,32 @@
     if(/stato|sistema|come stai|tutto bene/.test(s)){speak("Tutti i sistemi sono attivi. Nessuna anomalia, "+name+".");return;}
     if(/radar|telecamer/.test(s)){go("radar.html","Apro il radar.");return;}
     if(/blocca|chiudi|spegni|esci/.test(s)){speak("Blocco il quartier generale.",function(){try{sessionStorage.removeItem("qg_gate_open");}catch(e){}setTimeout(function(){location.href="index.html?menu";},300);});return;}
-    if(/chi sei|come ti chiami|cosa sei/.test(s)){speak("Sono J.A.R.V.I.S, il tuo assistente. Al tuo servizio.");return;}
+    if(/chi sei|come ti chiami|cosa sei/.test(s)){speak("Sono Jarvis, il tuo assistente. Al tuo servizio.");return;}
     if(/grazie/.test(s)){speak("Sempre a disposizione, "+name+".");return;}
     if(/come mi chiamo|il mio nome/.test(s)){speak("Ti chiami "+name+".");return;}
     if(/\bmenu\b|stanze|stanza|elenco/.test(s)){speak("Apro le stanze.",function(){setTimeout(function(){location.href="index.html?menu";},300);});return;}
     speak("Non ho capito, "+name+". Prova: ora, meteo, apri il radar, oppure stato.");
   }
 
-  document.getElementById("dock").addEventListener("submit",function(e){
-    e.preventDefault();var v=document.getElementById("say").value;document.getElementById("say").value="";respond(v);
-  });
 
-  // ---------- riconoscimento vocale (Android/desktop Chrome) ----------
-  var SR=window.SpeechRecognition||window.webkitSpeechRecognition, rec=null;
-  function setupMic(){
-    if(!SR)return;
-    var mic=document.getElementById("mic");mic.hidden=false;
-    rec=new SR();rec.lang="it-IT";rec.interimResults=false;rec.continuous=false;
-    rec.onstart=function(){listening=true;mic.classList.add("on");stateEl.textContent="ascolto";subEl.textContent="in ascolto...";};
-    rec.onend=function(){listening=false;mic.classList.remove("on");if(stateEl.textContent==="ascolto")stateEl.textContent="in linea";};
-    rec.onerror=function(){listening=false;mic.classList.remove("on");};
-    rec.onresult=function(ev){var txt=ev.results[0][0].transcript;respond(txt);};
-    mic.onclick=function(){if(listening){try{rec.stop();}catch(e){}}else{try{rec.start();}catch(e){}}};
+  // ---------- ascolto continuo (Android / computer Chrome) ----------
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition, rec=null, recActive=false, wantListen=false;
+  function pauseRec(){ if(rec&&recActive){try{rec.stop();}catch(e){}} }
+  function resumeRec(){ if(rec&&wantListen&&!recActive&&!speaking){try{rec.start();}catch(e){}} }
+  function setupVoice(){
+    if(!SR){ noVoiceFallback(); return; }
+    rec=new SR();rec.lang="it-IT";rec.interimResults=false;rec.continuous=true;
+    rec.onstart=function(){recActive=true;listening=true;if(!speaking)stateEl.textContent="in ascolto";};
+    rec.onend=function(){recActive=false;listening=false; if(wantListen&&!speaking){setTimeout(function(){try{rec.start();}catch(e){}},350);} };
+    rec.onerror=function(ev){recActive=false;listening=false; if(ev&&ev.error==="not-allowed"){wantListen=false;stateEl.textContent="microfono negato";} };
+    rec.onresult=function(ev){var r=ev.results[ev.results.length-1]; if(!r||!r.isFinal)return; var txt=r[0].transcript; if(txt&&txt.trim())respond(txt);};
+  }
+  function noVoiceFallback(){
+    stateEl.textContent="su iPhone scrivi qui";
+    var bar=document.createElement("form");bar.className="dock";
+    bar.innerHTML='<input id="say" placeholder="scrivi a Jarvis..." autocapitalize="off" enterkeyhint="send"><button type="submit" class="send">invia</button>';
+    document.getElementById("grid").appendChild(bar);
+    bar.addEventListener("submit",function(e){e.preventDefault();var el=document.getElementById("say");var v=el.value;el.value="";respond(v);});
   }
 
   // ---------- avvio ----------
@@ -330,7 +335,7 @@
     stateEl.textContent="in linea";
     var h=new Date().getHours();
     var saluto=h<5?"Buonanotte":h<12?"Buongiorno":h<18?"Buon pomeriggio":"Buonasera";
-    speak(saluto+" "+name+". Sono J.A.R.V.I.S, in ascolto.");
+    speak(saluto+" "+name+". Sono Jarvis, in ascolto.",function(){wantListen=true;});
     loadWeather();
   }
   document.getElementById("go").onclick=function(){
@@ -341,7 +346,7 @@
     try{speechSynthesis.getVoices();}catch(e){}
     // una utterance vuota sblocca l'audio su iOS
     try{var u0=new SpeechSynthesisUtterance(" ");u0.volume=0;speechSynthesis.speak(u0);}catch(e){}
-    setupMic();
+    setupVoice();
     setTimeout(boot,200);
   };
   try{if(speechSynthesis && speechSynthesis.onvoiceschanged===null)speechSynthesis.onvoiceschanged=function(){};}catch(e){}

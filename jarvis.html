@@ -104,7 +104,7 @@
 </head>
 <body>
 <div class="bar">
-  <a class="back" href="index.html">&lsaquo; QG</a>
+  <a class="back" href="index.html?menu">&#9776; stanze</a>
   <span class="brandtag">J.A.R.V.I.S</span>
 </div>
 
@@ -297,14 +297,11 @@
       return;}
     if(/stato|sistema|come stai|tutto bene/.test(s)){speak("Tutti i sistemi sono attivi. Nessuna anomalia, "+name+".");return;}
     if(/radar|telecamer/.test(s)){go("radar.html","Apro il radar.");return;}
-    if(/cassaforte|segret/.test(s)){go("cassaforte.html","Apro la cassaforte.");return;}
-    if(/parete|bacheca|colpo|indizi/.test(s)){go("bacheca.html","Apro la parete del colpo.");return;}
-    if(/sala|controllo/.test(s)){go("sala.html","Apro la sala di controllo.");return;}
-    if(/terminale|console/.test(s)){go("terminale.html","Apro il terminale.");return;}
-    if(/blocca|chiudi|spegni|esci/.test(s)){speak("Blocco il quartier generale.",function(){try{sessionStorage.removeItem("qg_gate_open");}catch(e){}setTimeout(function(){location.href="index.html";},300);});return;}
+    if(/blocca|chiudi|spegni|esci/.test(s)){speak("Blocco il quartier generale.",function(){try{sessionStorage.removeItem("qg_gate_open");}catch(e){}setTimeout(function(){location.href="index.html?menu";},300);});return;}
     if(/chi sei|come ti chiami|cosa sei/.test(s)){speak("Sono J.A.R.V.I.S, il tuo assistente. Al tuo servizio.");return;}
     if(/grazie/.test(s)){speak("Sempre a disposizione, "+name+".");return;}
     if(/come mi chiamo|il mio nome/.test(s)){speak("Ti chiami "+name+".");return;}
+    if(/\bmenu\b|stanze|stanza|elenco/.test(s)){speak("Apro le stanze.",function(){setTimeout(function(){location.href="index.html?menu";},300);});return;}
     speak("Non ho capito, "+name+". Prova: ora, meteo, apri il radar, oppure stato.");
   }
 

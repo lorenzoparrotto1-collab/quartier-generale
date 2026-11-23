@@ -108,6 +108,7 @@
 </style>
 </head>
 <body>
+<script>try{if(sessionStorage.getItem("qg_gate_open")==="1"&&!/[?&]menu/.test(location.search)&&location.hash!=="#menu"){location.replace("jarvis.html");}}catch(e){}</script>
 <div id="gate">
   <div class="gatebox" id="gatebox">
     <div class="gate" id="gLock">
@@ -181,56 +182,6 @@
       </div>
     </a>
 
-    <a class="card" href="sala.html">
-      <div class="art sala">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#1fe0c4" stroke-width="1.6"><rect x="3" y="4" width="8" height="7" rx="1"/><rect x="13" y="4" width="8" height="7" rx="1"/><rect x="3" y="13" width="8" height="7" rx="1"/><rect x="13" y="13" width="8" height="7" rx="1"/></svg>
-      </div>
-      <div class="cbody">
-        <h2>Sala di controllo</h2>
-        <p>La griglia di tutte le tue telecamere, con mappa di casa, stato e allarmi.</p>
-        <span class="go">apri &rarr;</span>
-      </div>
-    </a>
-    <a class="card" href="cassaforte.html">
-      <div class="art" style="background:radial-gradient(120% 120% at 50% 40%,#13202a,#0a1016)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#1fe0c4" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M12 10v4"/></svg>
-      </div>
-      <div class="cbody">
-        <h2>Cassaforte</h2>
-        <p>Un codice segreto e un posto chiuso a chiave per le tue note e i tuoi segreti.</p>
-        <span class="go">apri &rarr;</span>
-      </div>
-    </a>
-    <a class="card" href="terminale.html">
-      <div class="art" style="background:#060a08">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#1fe0c4" stroke-width="1.6"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 9l3 3-3 3"/><path d="M12 15h5"/></svg>
-      </div>
-      <div class="cbody">
-        <h2>Terminale</h2>
-        <p>La schermata nera del covo: scrivi comandi e il sistema risponde.</p>
-        <span class="go">apri &rarr;</span>
-      </div>
-    </a>
-    <a class="card" href="bacheca.html">
-      <div class="art" style="background:#0c1218">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#1fe0c4" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.4"/><circle cx="16" cy="15" r="1.4"/><path d="M8 9l8 6"/></svg>
-      </div>
-      <div class="cbody">
-        <h2>Parete del colpo</h2>
-        <p>La lavagna dell'investigatore: biglietti, foto e fili che collegano gli indizi.</p>
-        <span class="go">apri &rarr;</span>
-      </div>
-    </a>
-    <a class="card" href="sync.html">
-      <div class="art" style="background:radial-gradient(120% 120% at 50% 40%,#13202a,#0a1016)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#1fe0c4" stroke-width="1.5"><path d="M4 12a8 8 0 0 1 14-5l2 2"/><path d="M20 12a8 8 0 0 1-14 5l-2-2"/><path d="M18 4v5h-5M6 20v-5h5"/></svg>
-      </div>
-      <div class="cbody">
-        <h2>Sincronizzazione</h2>
-        <p>Porta i tuoi dati da un dispositivo all'altro con un file di backup.</p>
-        <span class="go">apri &rarr;</span>
-      </div>
-    </a>
   </div>
 
   <div class="soon">
@@ -257,7 +208,7 @@
   var lb=document.getElementById("lockNow");
   if(lb)lb.onclick=function(){try{sessionStorage.removeItem(SKEY);}catch(e){}location.reload();};
   function sess(){try{return sessionStorage.getItem(SKEY)==="1";}catch(e){return false;}}
-  function openGate(){try{sessionStorage.setItem(SKEY,"1");}catch(e){} gate.classList.add("hidden");}
+  function openGate(){try{sessionStorage.setItem(SKEY,"1");}catch(e){} gate.classList.add("hidden"); if(!/[?&]menu/.test(location.search)&&location.hash!=="#menu"){location.replace("jarvis.html");}}
   if(sess()){gate.classList.add("hidden");return;}
   if(!window.crypto||!crypto.subtle){gate.classList.add("hidden");return;}
 

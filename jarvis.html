@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<script>(function(){try{if(localStorage.getItem("qg_gate_hash")&&sessionStorage.getItem("qg_gate_open")!=="1"){location.replace("index.html");}}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#04080f">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="J.A.R.V.I.S">
+<title>J.A.R.V.I.S</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root{
+    --bg:#04080f; --blue:#43b4ff; --blue2:#8fd4ff; --cyan:#38e6ff; --dim:#2b5f86;
+    --line:#123a57; --fg:#bfe6ff; --muted:#5f85a3; --warn:#ffd24a;
+    --mono:"Space Mono",ui-monospace,Menlo,Consolas,monospace;
+    --disp:"Orbitron",var(--mono);
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{font-family:var(--mono);color:var(--fg);overflow:hidden;
+    background:radial-gradient(1200px 800px at 50% 40%,#0a1826,#04080f 70%);
+    -webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+    background:repeating-linear-gradient(to bottom,rgba(67,180,255,.04) 0 1px,transparent 1px 3px)}
+
+  .bar{position:absolute;z-index:20;top:0;left:0;right:0;display:flex;align-items:center;gap:10px;
+    padding:calc(10px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 10px max(12px,env(safe-area-inset-left,0px))}
+  .back{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;
+    border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:7px 10px;border-radius:7px;background:rgba(10,24,38,.6)}
+  .brandtag{margin-left:auto;font-family:var(--disp);letter-spacing:.3em;color:var(--dim);font-size:.72rem}
+
+  .grid{position:absolute;inset:0;display:grid;z-index:5;
+    grid-template-columns:1fr minmax(260px,1.3fr) 1fr;
+    grid-template-rows:1fr auto;gap:14px;align-items:center;
+    padding:calc(54px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
+
+  .panel{border:1px solid var(--line);background:linear-gradient(180deg,rgba(10,24,38,.72),rgba(6,14,24,.72));
+    border-radius:12px;padding:12px;backdrop-filter:blur(4px);align-self:stretch;overflow:hidden}
+  .panel h3{margin:0 0 8px;font-family:var(--disp);font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;color:var(--blue)}
+  .colL,.colR{display:flex;flex-direction:column;gap:12px;align-self:stretch;min-height:0;justify-content:center}
+
+  .big{font-family:var(--disp);font-size:1.5rem;color:var(--cyan);text-shadow:0 0 12px rgba(56,230,255,.5);line-height:1}
+  .kv{font-size:.72rem;color:var(--muted);margin-top:3px;letter-spacing:.06em}
+  .meter{height:7px;border-radius:4px;background:rgba(67,180,255,.12);overflow:hidden;margin-top:7px}
+  .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+
+  .console{font-size:.58rem;line-height:1.5;color:var(--dim);height:100%;overflow:hidden}
+  .console .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .console .l.hot{color:var(--blue2)}
+
+  /* reattore centrale */
+  .core{position:relative;width:100%;aspect-ratio:1/1;max-width:420px;margin:0 auto;display:grid;place-items:center}
+  .core canvas{position:absolute;inset:0;width:100%;height:100%}
+  .coretext{position:relative;z-index:2;text-align:center;pointer-events:none}
+  .coretext .t{font-family:var(--disp);letter-spacing:.34em;font-size:1rem;color:#dff3ff;text-shadow:0 0 16px rgba(56,230,255,.7)}
+  .coretext .s{font-size:.62rem;color:var(--blue2);margin-top:6px;letter-spacing:.14em;min-height:14px}
+  .statepill{position:relative;z-index:2;margin-top:10px;font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan)}
+
+  nn{display:block}
+  .nn{width:100%;height:110px;display:block}
+
+  /* input in basso, su tutta la larghezza */
+  .dock{grid-column:1 / -1;display:flex;gap:9px;align-items:center;
+    border:1px solid var(--line);background:rgba(8,18,30,.8);border-radius:12px;padding:8px 10px}
+  .dock .mic{flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);
+    background:rgba(10,24,38,.8);color:var(--cyan);font-size:1rem;cursor:pointer;display:grid;place-items:center}
+  .dock .mic.on{border-color:var(--cyan);box-shadow:0 0 14px rgba(56,230,255,.5);animation:micpulse 1.3s infinite}
+  @keyframes micpulse{50%{box-shadow:0 0 22px rgba(56,230,255,.8)}}
+  .dock input{flex:1;min-width:0;background:transparent;border:0;color:#dff3ff;font-family:var(--mono);font-size:.9rem;caret-color:var(--cyan)}
+  .dock input:focus{outline:none}
+  .dock .send{flex:none;border:1px solid var(--line);background:rgba(10,24,38,.8);color:var(--cyan);
+    font-family:var(--mono);font-size:.8rem;padding:9px 13px;border-radius:9px;cursor:pointer}
+
+  @media(max-width:720px){
+    .grid{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;gap:10px;overflow-y:auto}
+    .colL{order:3}.core{order:1}.colR{order:2}
+    .colL,.colR{flex-direction:row;flex-wrap:wrap}
+    .colL .panel,.colR .panel{flex:1 1 46%}
+    .core{max-width:300px}
+  }
+
+  /* overlay avvio */
+  .activate{position:fixed;inset:0;z-index:60;background:radial-gradient(800px 600px at 50% 45%,#0a1826,#04080f);
+    display:grid;place-items:center;text-align:center;padding:24px}
+  .activate.hidden{display:none}
+  .activate .ring{width:120px;height:120px;border-radius:50%;border:2px solid var(--line);margin:0 auto 20px;
+    display:grid;place-items:center;background:radial-gradient(circle,rgba(56,230,255,.25),transparent 60%);
+    box-shadow:0 0 40px rgba(56,230,255,.25);animation:breath 2.4s infinite}
+  @keyframes breath{50%{box-shadow:0 0 60px rgba(56,230,255,.5)}}
+  .activate h1{font-family:var(--disp);letter-spacing:.3em;color:#dff3ff;font-size:1.3rem;margin:0 0 8px;text-shadow:0 0 18px rgba(56,230,255,.6)}
+  .activate p{color:var(--muted);font-size:.8rem;margin:0 0 22px;line-height:1.5;max-width:30ch}
+  .activate button{font-family:var(--disp);letter-spacing:.2em;text-transform:uppercase;font-size:.8rem;
+    border:1px solid var(--cyan);background:rgba(10,24,38,.8);color:var(--cyan);padding:14px 26px;border-radius:12px;cursor:pointer}
+  .activate button:active{transform:scale(.97)}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <a class="back" href="index.html">&lsaquo; QG</a>
+  <span class="brandtag">J.A.R.V.I.S</span>
+</div>
+
+<div class="grid" id="grid">
+  <div class="colL">
+    <div class="panel" style="flex:1">
+      <h3>Sistema</h3>
+      <div class="console" id="console"></div>
+    </div>
+    <div class="panel">
+      <h3>Carico</h3>
+      <div class="big" id="load">4.050</div>
+      <div class="kv">processi attivi <span id="proc">441</span></div>
+      <div class="meter"><i id="loadBar" style="width:62%"></i></div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px">
+    <div class="core">
+      <canvas id="reactor"></canvas>
+      <div class="coretext">
+        <div class="t">J.A.R.V.I.S</div>
+        <div class="s" id="sub">in attesa</div>
+      </div>
+    </div>
+    <div class="statepill" id="state">standby</div>
+  </div>
+
+  <div class="colR">
+    <div class="panel">
+      <h3>Orario</h3>
+      <div class="big" id="clock">--:--:--</div>
+      <div class="kv" id="date">—</div>
+    </div>
+    <div class="panel">
+      <h3>Meteo</h3>
+      <div class="big" id="temp">--&deg;</div>
+      <div class="kv" id="sky">in lettura...</div>
+    </div>
+    <div class="panel">
+      <h3>Rete neurale</h3>
+      <canvas class="nn" id="nn"></canvas>
+    </div>
+  </div>
+
+  <form class="dock" id="dock" autocomplete="off">
+    <button type="button" class="mic" id="mic" title="parla" hidden>&#127908;</button>
+    <input id="say" placeholder="parla o scrivi a J.A.R.V.I.S..." autocapitalize="off" enterkeyhint="send">
+    <button type="submit" class="send">invia</button>
+  </form>
+</div>
+
+<div class="activate" id="activate">
+  <div>
+    <div class="ring">
+      <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#38e6ff" stroke-width="1.4"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+    </div>
+    <h1>J.A.R.V.I.S</h1>
+    <p>Tocca per attivare l'assistente e la voce.</p>
+    <button id="go">Attiva</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var speaking=false, listening=false, name="";
+  var subEl=document.getElementById("sub"), stateEl=document.getElementById("state");
+  var consoleEl=document.getElementById("console");
+
+  function ls(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function lss(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+  // ---------- console ----------
+  var BOOT=[
+    "avvio nucleo J.A.R.V.I.S v4.050",
+    "collegamento rete neurale ... ok",
+    "moduli sensoriali ... ok",
+    "sintesi vocale ... pronta",
+    "protocolli di sicurezza attivi",
+    "in ascolto."
+  ];
+  function cline(t,hot){
+    var d=document.createElement("div");d.className="l"+(hot?" hot":"");d.textContent=t;
+    consoleEl.appendChild(d);
+    while(consoleEl.children.length>14)consoleEl.removeChild(consoleEl.firstChild);
+  }
+
+  // ---------- orologio / meteo ----------
+  var giorni=["domenica","lunedi","martedi","mercoledi","giovedi","venerdi","sabato"];
+  var mesi=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+  function p2(n){return(n<10?"0":"")+n;}
+  function tick(){var d=new Date();
+    document.getElementById("clock").textContent=p2(d.getHours())+":"+p2(d.getMinutes())+":"+p2(d.getSeconds());
+    document.getElementById("date").textContent=giorni[d.getDay()]+" "+d.getDate()+" "+mesi[d.getMonth()];
+    document.getElementById("load").textContent=(3.5+Math.random()*1.5).toFixed(3);
+    document.getElementById("proc").textContent=430+Math.floor(Math.random()*20);
+    document.getElementById("loadBar").style.width=(45+Math.floor(Math.random()*40))+"%";
+  }
+  setInterval(tick,1000);tick();
+
+  var lastWeather=null;
+  function meteoDesc(c){var m={0:"sereno",1:"quasi sereno",2:"poco nuvoloso",3:"nuvoloso",45:"nebbia",48:"nebbia",51:"pioviggine",53:"pioviggine",55:"pioviggine",61:"pioggia",63:"pioggia",65:"pioggia forte",71:"neve",73:"neve",75:"neve",80:"rovesci",81:"rovesci",82:"rovesci",95:"temporale",96:"temporale",99:"temporale"};return m[c]!=null?m[c]:"variabile";}
+  function loadWeather(){
+    if(!navigator.geolocation)return;
+    navigator.geolocation.getCurrentPosition(function(p){
+      var u="https://api.open-meteo.com/v1/forecast?latitude="+p.coords.latitude+"&longitude="+p.coords.longitude+"&current=temperature_2m,weather_code";
+      fetch(u).then(function(r){return r.json();}).then(function(d){
+        var c=d.current||{};lastWeather=c;
+        document.getElementById("temp").innerHTML=Math.round(c.temperature_2m)+"&deg;";
+        document.getElementById("sky").textContent=meteoDesc(c.weather_code);
+      }).catch(function(){document.getElementById("sky").textContent="non disponibile";});
+    },function(){document.getElementById("sky").textContent="posizione negata";},{timeout:10000});
+  }
+
+  // ---------- reattore ----------
+  var cv=document.getElementById("reactor"),ctx=cv.getContext("2d"),t=0;
+  function rsize(){var r=cv.getBoundingClientRect();cv.width=r.width*2;cv.height=r.height*2;}
+  function drawReactor(){
+    rsize();var w=cv.width,h=cv.height,cx=w/2,cy=h/2,R=Math.min(w,h)/2-8;
+    ctx.clearRect(0,0,w,h);
+    var pulse=speaking?(0.72+0.28*Math.abs(Math.sin(t*0.5))):(listening?(0.6+0.2*Math.sin(t*0.18)):(0.5+0.08*Math.sin(t*0.08)));
+    // bagliore centrale
+    var g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*0.55*pulse+R*0.2);
+    g.addColorStop(0,"rgba(220,245,255,"+(0.9*pulse)+")");
+    g.addColorStop(0.3,"rgba(56,230,255,"+(0.6*pulse)+")");
+    g.addColorStop(1,"rgba(56,230,255,0)");
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
+    // anelli segmentati
+    function ring(rad,seg,speed,width,alpha){
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(t*speed);
+      ctx.strokeStyle="rgba(67,180,255,"+alpha+")";ctx.lineWidth=width;
+      for(var i=0;i<seg;i++){var a0=(i/seg)*Math.PI*2,a1=a0+(Math.PI*2/seg)*0.62;
+        ctx.beginPath();ctx.arc(0,0,rad,a0,a1);ctx.stroke();}
+      ctx.restore();
+    }
+    ring(R*0.86,3,0.006,6,0.5);
+    ring(R*0.72,24,-0.012,3,0.4);
+    ring(R*0.58,8,0.02,5,0.6);
+    ring(R*0.44,40,-0.03,2,0.35);
+    // nucleo
+    ctx.fillStyle="rgba(230,250,255,"+(0.85*pulse)+")";
+    ctx.beginPath();ctx.arc(cx,cy,R*0.16*(0.9+0.2*pulse),0,7);ctx.fill();
+    t++;requestAnimationFrame(drawReactor);
+  }
+  drawReactor();
+
+  // ---------- rete neurale ----------
+  var nn=document.getElementById("nn"),nx=nn.getContext("2d"),nodes=[];
+  function nnSize(){var r=nn.getBoundingClientRect();nn.width=r.width*2;nn.height=r.height*2;
+    if(!nodes.length){for(var i=0;i<14;i++)nodes.push({x:Math.random(),y:Math.random(),p:Math.random()*6});}}
+  function drawNN(){nnSize();var w=nn.width,h=nn.height;nx.clearRect(0,0,w,h);
+    for(var i=0;i<nodes.length;i++){for(var j=i+1;j<nodes.length;j++){
+      var dx=(nodes[i].x-nodes[j].x),dy=(nodes[i].y-nodes[j].y);var d=Math.sqrt(dx*dx+dy*dy);
+      if(d<0.33){nx.strokeStyle="rgba(67,180,255,"+(0.25*(1-d/0.33))+")";nx.lineWidth=1;
+        nx.beginPath();nx.moveTo(nodes[i].x*w,nodes[i].y*h);nx.lineTo(nodes[j].x*w,nodes[j].y*h);nx.stroke();}}}
+    for(var k=0;k<nodes.length;k++){var n=nodes[k];n.p+=0.03;var r=3+2*Math.abs(Math.sin(n.p));
+      nx.fillStyle=k%4===0?"rgba(255,80,110,.9)":"rgba(120,215,255,.9)";
+      nx.beginPath();nx.arc(n.x*w,n.y*h,r,0,7);nx.fill();}
+    requestAnimationFrame(drawNN);
+  }
+  drawNN();
+
+  // ---------- voce ----------
+  function voices(){try{return speechSynthesis.getVoices()||[];}catch(e){return [];}}
+  function pickVoice(){var v=voices();return v.filter(function(x){return /it[-_]IT/i.test(x.lang);})[0]||v.filter(function(x){return /^it/i.test(x.lang);})[0]||null;}
+  function speak(text,then){
+    subEl.textContent=text;
+    try{
+      if(!("speechSynthesis" in window)){if(then)then();return;}
+      var u=new SpeechSynthesisUtterance(text);u.lang="it-IT";u.rate=1;u.pitch=1;
+      var vo=pickVoice();if(vo)u.voice=vo;
+      u.onstart=function(){speaking=true;stateEl.textContent="risposta";};
+      u.onend=function(){speaking=false;stateEl.textContent=listening?"ascolto":"in linea";if(then)then();};
+      speechSynthesis.cancel();speechSynthesis.speak(u);
+    }catch(e){if(then)then();}
+  }
+
+  // ---------- comandi ----------
+  function go(dest,msg){speak(msg,function(){setTimeout(function(){location.href=dest;},300);});}
+  function respond(raw){
+    var s=(raw||"").toLowerCase().trim();if(!s)return;
+    cline("> "+raw,true);
+    if(/(ciao|salve|buongiorno|buonasera|ehi|hey)/.test(s)){speak("Salve "+name+". Sono a tua disposizione.");return;}
+    if(/che ore|\bora\b|orario/.test(s)){var d=new Date();speak("Sono le "+d.getHours()+" e "+d.getMinutes()+".");return;}
+    if(/che giorno|\bdata\b|oggi/.test(s)){var d=new Date();speak("Oggi e "+giorni[d.getDay()]+" "+d.getDate()+" "+mesi[d.getMonth()]+".");return;}
+    if(/meteo|tempo|gradi|temperatura/.test(s)){
+      if(lastWeather){speak("Al momento ci sono "+Math.round(lastWeather.temperature_2m)+" gradi, cielo "+meteoDesc(lastWeather.weather_code)+".");}
+      else{speak("Sto leggendo il meteo, riprova tra un istante.");loadWeather();}
+      return;}
+    if(/stato|sistema|come stai|tutto bene/.test(s)){speak("Tutti i sistemi sono attivi. Nessuna anomalia, "+name+".");return;}
+    if(/radar|telecamer/.test(s)){go("radar.html","Apro il radar.");return;}
+    if(/cassaforte|segret/.test(s)){go("cassaforte.html","Apro la cassaforte.");return;}
+    if(/parete|bacheca|colpo|indizi/.test(s)){go("bacheca.html","Apro la parete del colpo.");return;}
+    if(/sala|controllo/.test(s)){go("sala.html","Apro la sala di controllo.");return;}
+    if(/terminale|console/.test(s)){go("terminale.html","Apro il terminale.");return;}
+    if(/blocca|chiudi|spegni|esci/.test(s)){speak("Blocco il quartier generale.",function(){try{sessionStorage.removeItem("qg_gate_open");}catch(e){}setTimeout(function(){location.href="index.html";},300);});return;}
+    if(/chi sei|come ti chiami|cosa sei/.test(s)){speak("Sono J.A.R.V.I.S, il tuo assistente. Al tuo servizio.");return;}
+    if(/grazie/.test(s)){speak("Sempre a disposizione, "+name+".");return;}
+    if(/come mi chiamo|il mio nome/.test(s)){speak("Ti chiami "+name+".");return;}
+    speak("Non ho capito, "+name+". Prova: ora, meteo, apri il radar, oppure stato.");
+  }
+
+  document.getElementById("dock").addEventListener("submit",function(e){
+    e.preventDefault();var v=document.getElementById("say").value;document.getElementById("say").value="";respond(v);
+  });
+
+  // ---------- riconoscimento vocale (Android/desktop Chrome) ----------
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition, rec=null;
+  function setupMic(){
+    if(!SR)return;
+    var mic=document.getElementById("mic");mic.hidden=false;
+    rec=new SR();rec.lang="it-IT";rec.interimResults=false;rec.continuous=false;
+    rec.onstart=function(){listening=true;mic.classList.add("on");stateEl.textContent="ascolto";subEl.textContent="in ascolto...";};
+    rec.onend=function(){listening=false;mic.classList.remove("on");if(stateEl.textContent==="ascolto")stateEl.textContent="in linea";};
+    rec.onerror=function(){listening=false;mic.classList.remove("on");};
+    rec.onresult=function(ev){var txt=ev.results[0][0].transcript;respond(txt);};
+    mic.onclick=function(){if(listening){try{rec.stop();}catch(e){}}else{try{rec.start();}catch(e){}}};
+  }
+
+  // ---------- avvio ----------
+  function boot(){
+    var i=0;(function next(){if(i>=BOOT.length){afterBoot();return;}cline(BOOT[i++]);setTimeout(next,420);})();
+  }
+  function afterBoot(){
+    stateEl.textContent="in linea";
+    var h=new Date().getHours();
+    var saluto=h<5?"Buonanotte":h<12?"Buongiorno":h<18?"Buon pomeriggio":"Buonasera";
+    speak(saluto+" "+name+". Sono J.A.R.V.I.S, in ascolto.");
+    loadWeather();
+  }
+  document.getElementById("go").onclick=function(){
+    // nome
+    name=ls("qg_jarvis_name")||"";
+    if(!name){var n=prompt("Come ti devo chiamare?","");name=(n&&n.trim())?n.trim():"agente";lss("qg_jarvis_name",name);}
+    document.getElementById("activate").classList.add("hidden");
+    try{speechSynthesis.getVoices();}catch(e){}
+    // una utterance vuota sblocca l'audio su iOS
+    try{var u0=new SpeechSynthesisUtterance(" ");u0.volume=0;speechSynthesis.speak(u0);}catch(e){}
+    setupMic();
+    setTimeout(boot,200);
+  };
+  try{if(speechSynthesis && speechSynthesis.onvoiceschanged===null)speechSynthesis.onvoiceschanged=function(){};}catch(e){}
+})();
+</script>
+<script>
+if("serviceWorker" in navigator){
+  var _refreshing=false;
+  navigator.serviceWorker.addEventListener("controllerchange",function(){if(_refreshing)return;_refreshing=true;location.reload();});
+  window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").then(function(reg){if(reg&&reg.update){setInterval(function(){try{reg.update();}catch(e){}},60000);}}).catch(function(){});});
+}
+</script>
+</body>
+</html>

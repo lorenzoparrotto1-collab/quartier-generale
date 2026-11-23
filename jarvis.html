@@ -2,7 +2,6 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<script>(function(){try{if(localStorage.getItem("qg_gate_hash")&&sessionStorage.getItem("qg_gate_open")!=="1"){location.replace("index.html");}}catch(e){}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -250,8 +249,9 @@
   // ---------- rete neurale ----------
   var nn=document.getElementById("nn"),nx=nn.getContext("2d"),nodes=[];
   function nnSize(){var r=nn.getBoundingClientRect();nn.width=r.width*2;nn.height=r.height*2;
-    if(!nodes.length){for(var i=0;i<14;i++)nodes.push({x:Math.random(),y:Math.random(),p:Math.random()*6});}}
+    if(!nodes.length){for(var i=0;i<18;i++)nodes.push({x:0.1+Math.random()*0.8,y:0.1+Math.random()*0.8,p:Math.random()*6,vx:(Math.random()-0.5)*0.0013,vy:(Math.random()-0.5)*0.0013});}}
   function drawNN(){nnSize();var w=nn.width,h=nn.height;nx.clearRect(0,0,w,h);
+    for(var m=0;m<nodes.length;m++){var q=nodes[m];q.x+=q.vx;q.y+=q.vy;if(q.x<0.04||q.x>0.96)q.vx*=-1;if(q.y<0.08||q.y>0.92)q.vy*=-1;}
     for(var i=0;i<nodes.length;i++){for(var j=i+1;j<nodes.length;j++){
       var dx=(nodes[i].x-nodes[j].x),dy=(nodes[i].y-nodes[j].y);var d=Math.sqrt(dx*dx+dy*dy);
       if(d<0.33){nx.strokeStyle="rgba(67,180,255,"+(0.25*(1-d/0.33))+")";nx.lineWidth=1;
@@ -298,7 +298,7 @@
       return;}
     if(/stato|sistema|come stai|tutto bene/.test(s)){speak("Tutti i sistemi sono attivi. Nessuna anomalia, "+name+".");return;}
     if(/radar|telecamer/.test(s)){go("radar.html","Apro il radar.");return;}
-    if(/blocca|chiudi|spegni|esci/.test(s)){speak("Blocco il quartier generale.",function(){try{sessionStorage.removeItem("qg_gate_open");}catch(e){}setTimeout(function(){location.href="index.html?menu";},300);});return;}
+    if(/blocca|chiudi|spegni|esci/.test(s)){speak("Il blocco e disattivato, "+name+".");return;}
     if(/chi sei|come ti chiami|cosa sei/.test(s)){speak("Sono Jarvis, il tuo assistente. Al tuo servizio.");return;}
     if(/grazie/.test(s)){speak("Sempre a disposizione, "+name+".");return;}
     if(/come mi chiamo|il mio nome/.test(s)){speak("Ti chiami "+name+".");return;}
@@ -331,23 +331,18 @@
   function boot(){
     var i=0;(function next(){if(i>=BOOT.length){afterBoot();return;}cline(BOOT[i++]);setTimeout(next,420);})();
   }
-  function afterBoot(){
-    stateEl.textContent="in linea";
-    var h=new Date().getHours();
-    var saluto=h<5?"Buonanotte":h<12?"Buongiorno":h<18?"Buon pomeriggio":"Buonasera";
-    speak(saluto+" "+name+". Sono Jarvis, in ascolto.",function(){wantListen=true;});
-    loadWeather();
-  }
+  function afterBoot(){ stateEl.textContent="in linea"; }
   document.getElementById("go").onclick=function(){
-    // nome
     name=ls("qg_jarvis_name")||"";
     if(!name){var n=prompt("Come ti devo chiamare?","");name=(n&&n.trim())?n.trim():"agente";lss("qg_jarvis_name",name);}
     document.getElementById("activate").classList.add("hidden");
     try{speechSynthesis.getVoices();}catch(e){}
-    // una utterance vuota sblocca l'audio su iOS
-    try{var u0=new SpeechSynthesisUtterance(" ");u0.volume=0;speechSynthesis.speak(u0);}catch(e){}
     setupVoice();
-    setTimeout(boot,200);
+    boot();
+    var h=new Date().getHours();
+    var saluto=h<5?"Buonanotte":h<12?"Buongiorno":h<18?"Buon pomeriggio":"Buonasera";
+    speak(saluto+" "+name+". Sono Jarvis, in ascolto.",function(){wantListen=true;});
+    loadWeather();
   };
   try{if(speechSynthesis && speechSynthesis.onvoiceschanged===null)speechSynthesis.onvoiceschanged=function(){};}catch(e){}
 })();

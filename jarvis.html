@@ -78,11 +78,13 @@
     font-family:var(--mono);font-size:.8rem;padding:9px 13px;border-radius:9px;cursor:pointer}
 
   @media(max-width:720px){
-    .grid{grid-template-columns:1fr;grid-template-rows:auto 1fr auto;gap:10px;overflow-y:auto}
-    .colL{order:3}.core{order:1}.colR{order:2}
+    .grid{display:flex;flex-direction:column;gap:10px;overflow-y:auto;
+      padding-top:calc(50px + env(safe-area-inset-top,0px))}
+    .core{order:1;max-width:230px;margin:0 auto}
+    .colR{order:2}.colL{order:3}.dock{order:4}
     .colL,.colR{flex-direction:row;flex-wrap:wrap}
-    .colL .panel,.colR .panel{flex:1 1 46%}
-    .core{max-width:300px}
+    .colL .panel,.colR .panel{flex:1 1 44%;min-width:0}
+    .nn{height:80px}
   }
 
   /* overlay avvio */
@@ -280,7 +282,8 @@
       u.onstart=function(){speaking=true;stateEl.textContent="risposta";pauseRec();};
       u.onend=function(){speaking=false;stateEl.textContent="in ascolto";if(then)then();resumeRec();};
       u.onerror=function(){speaking=false;if(then)then();resumeRec();};
-      speechSynthesis.cancel();speechSynthesis.speak(u);
+      try{speechSynthesis.resume();}catch(_e){}
+      speechSynthesis.speak(u);
     }catch(e){if(then)then();}
   }
 

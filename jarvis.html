@@ -107,6 +107,7 @@
 <div class="bar">
   <a class="back" href="index.html?menu">&#9776; stanze</a>
   <button class="back" id="cfgBtn" style="cursor:pointer;margin-left:8px">&#9881; bot</button>
+  <button class="back" id="brainBtn" style="cursor:pointer;margin-left:8px">&#129504;</button>
   <span class="brandtag">J.A.R.V.I.S</span>
 </div>
 
@@ -347,22 +348,34 @@
     });
   }
   function cleanAI(t){return String(t||"").replace(/[*_`#>\[\]]/g,"").replace(/\s+/g," ").trim().slice(0,1000);}
+  function setBrain(){
+    var cur=ls("qg_claude_key")||"";
+    var k=prompt("Incolla la chiave API di Claude (Anthropic) per usarla come cervello.\nATTENZIONE: e a pagamento, ogni domanda consuma credito. Chiedi a un adulto.\nLascia vuoto per tornare al cervello gratuito."+(cur?"\n\n(ora e impostata una chiave)":""),"");
+    if(k===null)return; k=k.trim();
+    if(!k){try{localStorage.removeItem("qg_claude_key");}catch(e){} speak("Torno al cervello gratuito, "+name+"."); return;}
+    try{localStorage.setItem("qg_claude_key",k);}catch(e){}
+    speak("Cervello Claude collegato, "+name+".");
+  }
   function askAI(q){
+    var key=ls("qg_claude_key")||"";
     cline("Jarvis sta pensando...");subEl.textContent="sto pensando...";stateEl.textContent="elaboro";
-    var payload={model:"openai-large",messages:[
-      {role:"system",content:"Sei Jarvis, assistente personale. Rispondi SEMPRE in italiano corretto e naturale, in modo chiaro, preciso e utile. Dai la risposta giusta e completa ma concisa, adatta a essere letta ad alta voce. Niente elenchi puntati, niente simboli: solo frasi."},
-      {role:"user",content:q}
-    ],seed:Math.floor(Math.random()*100000)};
-    var done=false, to=setTimeout(function(){if(done)return;done=true;speak("Ci sto mettendo troppo, riprova, "+name+".");},22000);
+    var done=false, to=setTimeout(function(){if(done)return;done=true;speak("Ci sto mettendo troppo, riprova, "+name+".");},25000);
     function fail(){if(done)return;done=true;clearTimeout(to);speak("Non riesco a collegarmi al cervello, "+name+".");}
-    fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
-      .then(function(r){return r.json();}).then(function(d){
-        if(done)return;done=true;clearTimeout(to);
-        var ans="";try{ans=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}
-        ans=cleanAI(ans);
-        if(!ans){speak("Non ho trovato una risposta, "+name+".");return;}
-        cline(ans);speak(ans);
-      }).catch(fail);
+    function ok(a){if(done)return;done=true;clearTimeout(to);a=cleanAI(a);if(!a){speak("Non ho trovato una risposta, "+name+".");return;}cline(a);speak(a);}
+    var SYS="Sei Jarvis, assistente personale. Rispondi SEMPRE in italiano corretto e naturale, in modo chiaro, preciso e utile. Dai la risposta giusta e completa ma concisa, adatta a essere letta ad alta voce. Niente elenchi puntati o simboli: solo frasi.";
+    if(key){
+      fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:"claude-3-5-haiku-latest",max_tokens:500,system:SYS,messages:[{role:"user",content:q}]})})
+        .then(function(r){return r.json();}).then(function(d){
+          var a="";try{a=(d&&d.content&&d.content[0]&&d.content[0].text)||"";}catch(e){}
+          if(!a&&d&&d.error){speak("La chiave Claude non va: "+((d.error&&d.error.message)||"errore")+".");done=true;clearTimeout(to);return;}
+          ok(a);
+        }).catch(fail);
+    } else {
+      var payload={model:"openai-large",messages:[{role:"system",content:SYS},{role:"user",content:q}],seed:Math.floor(Math.random()*100000)};
+      fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
+        .then(function(r){return r.json();}).then(function(d){var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}ok(a);}).catch(fail);
+    }
   }
 
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition, rec=null, recActive=false, wantListen=false;
@@ -392,6 +405,7 @@
   function afterBoot(){ stateEl.textContent="in linea"; }
   (function(){try{var gn=document.getElementById("goName");if(gn)gn.value=ls("qg_jarvis_name")||"";}catch(e){}})();
   (function(){var cb=document.getElementById("cfgBtn");if(cb)cb.onclick=manageBots;})();
+  (function(){var bb=document.getElementById("brainBtn");if(bb)bb.onclick=setBrain;})();
   document.getElementById("go").onclick=function(){
     var typed="";try{typed=(document.getElementById("goName").value||"").trim();}catch(e){}
     name=typed||ls("qg_jarvis_name")||"agente";lss("qg_jarvis_name",name);

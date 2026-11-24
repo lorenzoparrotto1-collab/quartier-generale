@@ -36,7 +36,7 @@
   .brandtag{margin-left:auto;font-family:var(--disp);letter-spacing:.3em;color:var(--dim);font-size:.72rem}
 
   .grid{position:absolute;inset:0;display:grid;z-index:5;
-    grid-template-columns:1fr minmax(260px,1.3fr) 1fr;
+    grid-template-columns:minmax(190px,290px) minmax(0,1fr) minmax(190px,290px);
     grid-template-rows:1fr auto;gap:14px;align-items:center;
     padding:calc(54px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
 
@@ -50,12 +50,12 @@
   .meter{height:7px;border-radius:4px;background:rgba(67,180,255,.12);overflow:hidden;margin-top:7px}
   .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan))}
 
-  .console{font-size:.58rem;line-height:1.5;color:var(--dim);height:100%;overflow:hidden}
+  .console{font-size:.58rem;line-height:1.5;color:var(--dim);max-height:180px;overflow:hidden}
   .console .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .console .l.hot{color:var(--blue2)}
 
   /* reattore centrale */
-  .core{position:relative;width:100%;aspect-ratio:1/1;max-width:420px;margin:0 auto;display:grid;place-items:center}
+  .core{position:relative;width:100%;aspect-ratio:1/1;max-width:min(620px,70vh);margin:0 auto;display:grid;place-items:center}
   .core canvas{position:absolute;inset:0;width:100%;height:100%}
   .coretext{position:relative;z-index:2;text-align:center;pointer-events:none}
   .coretext .t{font-family:var(--disp);letter-spacing:.34em;font-size:1rem;color:#dff3ff;text-shadow:0 0 16px rgba(56,230,255,.7)}

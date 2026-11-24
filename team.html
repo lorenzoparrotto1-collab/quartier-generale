@@ -14,43 +14,53 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap">
 <style>
   :root{
-    --bg:#04080f; --panel:#0e1a28; --panel2:#0a1420; --line:#163048; --fg:#cfe3f0; --muted:#6f90a8;
-    --blue:#43b4ff; --cyan:#38e6ff; --gold:#ffc46a; --live:#ff5d73; --ok:#35e09a;
+    --bg:#05070c; --panel:rgba(255,255,255,.015); --panel2:rgba(0,0,0,.2); --line:rgba(255,205,135,.16);
+    --fg:#e8eef6; --muted:#7e8ca0; --gold:#ffcf8a; --gold2:#ffe6bf; --goldline:rgba(255,200,120,.3);
+    --live:#ff6a7d; --ok:#5fd6a6;
     --mono:"Space Mono",ui-monospace,Menlo,Consolas,monospace; --sans:"Inter",system-ui,sans-serif;
     color-scheme:dark;
   }
   *{box-sizing:border-box}
   html,body{min-height:100%}
   body{margin:0;font-family:var(--sans);color:var(--fg);min-height:100dvh;
-    background:radial-gradient(900px 500px at 50% -10%,rgba(67,180,255,.06),transparent 55%),var(--bg);-webkit-font-smoothing:antialiased}
-  .wrap{max-width:680px;margin:0 auto;
-    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-    padding-block:calc(14px + env(safe-area-inset-top,0px)) 40px}
-  .top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-  .back{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:8px 11px;border-radius:9px;background:var(--panel)}
-  h1{font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;font-size:1.05rem;margin:0}
-  .setup{border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--panel2));border-radius:14px;padding:14px;margin-bottom:16px}
-  label{display:block;font-size:.72rem;color:var(--muted);margin:0 0 5px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase}
-  select,input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-family:var(--sans);font-size:.95rem;padding:10px 11px;border-radius:9px;margin-bottom:11px}
-  select:focus,input:focus{outline:none;border-color:var(--cyan)}
-  .run{width:100%;border:1px solid rgba(56,230,255,.5);background:var(--panel);color:var(--cyan);font-family:var(--mono);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;padding:13px;border-radius:11px;cursor:pointer}
-  .run:disabled{opacity:.5}
+    background:radial-gradient(1100px 620px at 50% -12%,rgba(255,190,100,.06),transparent 60%),var(--bg);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:700px;margin:0 auto;
+    padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));
+    padding-block:calc(18px + env(safe-area-inset-top,0px)) 48px}
+  .top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  .back{font-family:var(--mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line);color:var(--gold);text-decoration:none;padding:9px 13px;border-radius:10px;background:transparent}
+  .back:hover{border-color:var(--goldline)}
+  h1{font-family:var(--mono);letter-spacing:.24em;text-transform:uppercase;font-size:.9rem;margin:0;color:var(--gold2)}
+  .setup{position:relative;border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:18px;margin-bottom:18px}
+  .setup::before{content:"";position:absolute;left:14px;right:14px;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--goldline),transparent)}
+  label{display:block;font-size:.62rem;color:var(--gold);margin:0 0 6px;font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase}
+  select,input{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);color:var(--fg);font-family:var(--sans);font-size:.95rem;padding:11px 12px;border-radius:4px;margin-bottom:13px}
+  select:focus,input:focus{outline:none;border-color:var(--goldline)}
+  input::placeholder{color:var(--muted)}
+  .run{width:100%;border:1px solid var(--goldline);background:rgba(255,205,135,.05);color:var(--gold2);font-family:var(--mono);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;padding:14px;border-radius:4px;cursor:pointer}
+  .run:hover{background:rgba(255,205,135,.1)}
+  .run:disabled{opacity:.45}
   .chat{display:flex;flex-direction:column;gap:12px}
-  .msg{display:flex;gap:11px;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:12px}
-  .av{width:40px;height:40px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:1.3rem;background:var(--panel);border:1px solid var(--line)}
+  .msg{display:flex;gap:12px;border:1px solid var(--line);background:var(--panel2);border-radius:4px;padding:14px}
+  .av{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:1.15rem;background:rgba(255,205,135,.05);border:1px solid var(--line)}
   .msg .b{min-width:0}
-  .msg .nm{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;margin-bottom:4px}
-  .msg .tx{font-size:.9rem;line-height:1.55;white-space:pre-wrap;word-break:break-word}
-  .msg.pm .nm{color:var(--cyan)}
-  .plan{border:1px solid rgba(53,224,154,.4);background:rgba(53,224,154,.06);border-radius:12px;padding:14px;margin-top:14px}
-  .plan h3{margin:0 0 8px;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ok)}
-  .plan .tx{font-size:.9rem;line-height:1.6;white-space:pre-wrap}
-  .plan button{margin-top:12px;border:1px solid rgba(53,224,154,.5);background:transparent;color:var(--ok);font-family:var(--mono);font-size:.7rem;padding:9px 13px;border-radius:9px;cursor:pointer}
-  .status{font-family:var(--mono);font-size:.72rem;color:var(--muted);margin:14px 0;min-height:18px}
-  .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--muted);border-top-color:var(--cyan);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-1px;margin-right:6px}
+  .msg .nm{font-family:var(--mono);font-size:.62rem;letter-spacing:.18em;color:var(--gold);text-transform:uppercase;margin-bottom:5px}
+  .msg .tx{font-size:.9rem;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .msg.pm{border-color:var(--goldline)}
+  .msg.pm .nm{color:var(--gold2)}
+  .plan{position:relative;border:1px solid var(--goldline);background:rgba(255,205,135,.04);border-radius:4px;padding:16px;margin-top:16px}
+  .plan h3{margin:0 0 10px;font-family:var(--mono);font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+  .plan .tx{font-size:.9rem;line-height:1.7;white-space:pre-wrap;color:var(--gold2)}
+  .exec{border:1px solid var(--line);background:var(--panel2);border-radius:4px;padding:14px;margin-top:10px}
+  .exec .st{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:7px;display:flex;align-items:center;gap:7px}
+  .exec .st .n{width:5px;height:5px;border-radius:50%;background:var(--ok);box-shadow:0 0 7px var(--ok)}
+  .exec .out{font-size:.88rem;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .note{font-family:var(--mono);font-size:.72rem;color:var(--ok);margin-top:12px;letter-spacing:.04em}
+  .status{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;color:var(--muted);margin:16px 0;min-height:18px}
+  .spin{display:inline-block;width:10px;height:10px;border:2px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-1px;margin-right:7px}
   @keyframes sp{to{transform:rotate(360deg)}}
-  .warn{color:var(--live);font-size:.84rem;line-height:1.5}
-  a.lnk{color:var(--cyan)}
+  .warn{color:var(--live);font-size:.84rem;line-height:1.6}
+  a.lnk{color:var(--gold)}
 </style>
 </head>
 <body>
@@ -164,9 +174,11 @@
       "Sviluppatore (come realizzarlo in pratica, strumenti semplici), Creativo (nome, stile, comunicazione), "+
       "Marketing (come farlo conoscere e crescere). "+
       "Ogni collega scrive 2-3 frasi concrete e si rivolge agli altri, basandosi su cosa hanno detto. Niente elenchi puntati dentro gli interventi. "+
-      "Poi un piano con 3-4 prossimi passi pratici e brevi. "+
+      "Poi il team ESEGUE: per ogni passo del piano (3-4 passi) non si limita a dire cosa fare, ma produce GIA il materiale concreto, pronto da usare. "+
+      "Nel campo 'fatto' scrivi il contenuto vero e completo: il testo del listino con i prezzi, il post gia scritto, la mail gia pronta, la bozza, i nomi proposti, ecc. "+
+      "Se un passo richiede un'azione nel mondo reale che un assistente non puo compiere (pubblicare online, telefonare, pagare), scrivi lo stesso tutto il materiale pronto e in fondo una riga 'Da fare tu: ...'. "+
       "Rispondi SOLO con un oggetto JSON valido, senza testo prima o dopo, in questa forma esatta: "+
-      '{"pm":"...","stratega":"...","sviluppatore":"...","creativo":"...","marketing":"...","piano":["passo 1","passo 2","passo 3"]}';
+      '{"pm":"...","stratega":"...","sviluppatore":"...","creativo":"...","marketing":"...","piano":[{"passo":"titolo breve","fatto":"il materiale concreto gia pronto, anche lungo"}]}';
 
     callAIretry(SYS, "Progetto o obiettivo: "+goal, function(ans,err){
       running=false;document.getElementById("run").disabled=false;
@@ -181,21 +193,49 @@
         var txt=data[keyOf(m.name)];
         if(txt&&String(txt).trim())addMsg(m,String(txt).trim());
       });
-      setStatus("Riunione conclusa.");
-      var piano=data.piano;
-      if(Array.isArray(piano)&&piano.length){
-        var txt=piano.map(function(p,i){return (i+1)+". "+String(p).trim();}).join("\n");
+      setStatus("Riunione conclusa. Il team ha eseguito.");
+      var piano=normPiano(data.piano);
+      if(piano.length){
         var pb=document.getElementById("planBox");
-        pb.innerHTML='<div class="plan"><h3>Piano</h3><div class="tx">'+esc(txt)+'</div><button id="savePlan">Salva i passi nell\'agenda</button></div>';
-        document.getElementById("savePlan").onclick=function(){
-          try{var a=JSON.parse(localStorage.getItem("qg_agenda_v1")||"{}");a.projects=a.projects||[];a.tasks=a.tasks||[];a.notes=a.notes||[];
-            piano.forEach(function(p){var t=String(p).replace(/^\s*\d+[.)]\s*/,"").trim();if(t){a.tasks.unshift({id:"x"+Date.now().toString(36)+Math.floor(Math.random()*1000),text:t,done:false,proj:goal.slice(0,30)});}});
-            localStorage.setItem("qg_agenda_v1",JSON.stringify(a));this.textContent="Salvati nell'agenda ✓";this.disabled=true;
-          }catch(e){this.textContent="errore nel salvataggio";}
-        };
+        var html='<div class="plan"><h3>Il team ha fatto questo</h3>';
+        piano.forEach(function(p){
+          html+='<div class="exec"><div class="st"><span class="n"></span>'+esc(p.passo)+'</div><div class="out">'+esc(p.fatto)+'</div></div>';
+        });
+        html+='<div class="note" id="saveNote"></div></div>';
+        pb.innerHTML=html;
+        // salvataggio automatico in agenda
+        var n=autoSave(piano,goal);
+        document.getElementById("saveNote").textContent="✓ Salvato in agenda: "+n.tasks+" cose da fare e "+n.notes+" note pronte.";
       }
     });
   };
+
+  function normPiano(piano){
+    var out=[];
+    if(!Array.isArray(piano))return out;
+    piano.forEach(function(p){
+      if(p&&typeof p==="object"){out.push({passo:String(p.passo||p.titolo||"Passo").trim(),fatto:String(p.fatto||p.contenuto||p.testo||"").trim()});}
+      else if(p){out.push({passo:String(p).trim(),fatto:""});}
+    });
+    return out;
+  }
+  function autoSave(piano,goal){
+    var tc=0,nc=0;
+    try{
+      var a=JSON.parse(localStorage.getItem("qg_agenda_v1")||"{}");
+      a.projects=a.projects||[];a.tasks=a.tasks||[];a.notes=a.notes||[];
+      // assicura il progetto
+      if(goal&&!a.projects.some(function(x){return (x.name||"").toLowerCase()===goal.toLowerCase();})){
+        a.projects.push({id:"x"+Date.now().toString(36)+Math.floor(Math.random()*1000),name:goal.slice(0,60)});
+      }
+      piano.forEach(function(p){
+        if(p.passo){a.tasks.unshift({id:"x"+Date.now().toString(36)+Math.floor(Math.random()*1000),text:p.passo,done:false,proj:goal.slice(0,30)});tc++;}
+        if(p.fatto){a.notes.unshift({id:"x"+Date.now().toString(36)+Math.floor(Math.random()*1000),text:"["+p.passo+"] "+p.fatto,ts:Date.now()});nc++;}
+      });
+      localStorage.setItem("qg_agenda_v1",JSON.stringify(a));
+    }catch(e){}
+    return {tasks:tc,notes:nc};
+  }
 })();
 </script>
 <script>

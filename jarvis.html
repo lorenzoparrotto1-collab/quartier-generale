@@ -409,16 +409,25 @@
           ok(a);
         }).catch(fail);
     } else {
-      var models=["openai-large","openai","mistral","deepseek"];
-      (function tryModel(idx){
+      var sysEnc=encodeURIComponent(SYS), qEnc=encodeURIComponent(q);
+      var attempts=[
+        {get:true, model:"openai"},
+        {get:true, model:"openai-large"},
+        {get:false, model:"openai"},
+        {get:true, model:"mistral"}
+      ];
+      (function tryA(i){
         if(done)return;
-        if(idx>=models.length){fail();return;}
-        var payload={model:models[idx],messages:[{role:"system",content:SYS},{role:"user",content:q}],seed:Math.floor(Math.random()*100000)};
-        fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
-          .then(function(r){return r.json();}).then(function(d){
-            var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}
-            if(a&&a.trim()){ok(a);} else {tryModel(idx+1);}
-          }).catch(function(){tryModel(idx+1);});
+        if(i>=attempts.length){fail();return;}
+        var at=attempts[i], p;
+        if(at.get){
+          p=fetch("https://text.pollinations.ai/"+qEnc+"?model="+at.model+"&system="+sysEnc+"&referrer=jarvis")
+             .then(function(r){if(!r.ok)throw 0;return r.text();}).then(function(t){return (t||"").trim();});
+        } else {
+          p=fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:at.model,messages:[{role:"system",content:SYS},{role:"user",content:q}]})})
+             .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}return (a||"").trim();});
+        }
+        p.then(function(a){ if(a && a.charAt(0)!=="<" && a.length>1){ok(a);} else {tryA(i+1);} }).catch(function(){tryA(i+1);});
       })(0);
     }
   }

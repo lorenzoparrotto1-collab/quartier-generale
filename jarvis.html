@@ -108,6 +108,7 @@
   <a class="back" href="index.html?menu">&#9776; stanze</a>
   <button class="back" id="cfgBtn" style="cursor:pointer;margin-left:8px">&#9881; bot</button>
   <button class="back" id="brainBtn" style="cursor:pointer;margin-left:8px">&#129504;</button>
+  <button class="back" id="voiceBtn" style="cursor:pointer;margin-left:8px">&#128483;</button>
   <span class="brandtag">J.A.R.V.I.S</span>
 </div>
 
@@ -271,9 +272,19 @@
   // ---------- voce ----------
   function voices(){try{return speechSynthesis.getVoices()||[];}catch(e){return [];}}
   function pickVoice(){
-    var v=voices(), it=v.filter(function(x){return /it[-_]IT/i.test(x.lang);});
+    var v=voices(), pref="";try{pref=localStorage.getItem("qg_voice_name")||"";}catch(e){}
+    if(pref){var m=v.filter(function(x){return x.name===pref;})[0];if(m)return m;}
+    var it=v.filter(function(x){return /it[-_]IT/i.test(x.lang);});
     if(!it.length)it=v.filter(function(x){return /^it/i.test(x.lang);});
     return it.filter(function(x){return x.localService;})[0]||it[0]||null;
+  }
+  function pickVoiceMenu(){
+    var v=voices().filter(function(x){return /^it/i.test(x.lang)||/it[-_]IT/i.test(x.lang);});
+    if(!v.length){alert("Nessuna voce italiana trovata. Scaricane una in Impostazioni > Accessibilita > Contenuti letti > Voci > Italiano.");return;}
+    var lista=v.map(function(x,i){return (i+1)+") "+x.name;}).join("\n");
+    var sel=prompt("Scegli la voce di Jarvis (scrivi il numero):\n"+lista,"1");
+    if(sel===null)return; var idx=parseInt(sel,10)-1;
+    if(v[idx]){try{localStorage.setItem("qg_voice_name",v[idx].name);}catch(e){} speak("Voce impostata: "+v[idx].name+".");}
   }
   function speak(text,then){
     subEl.textContent=text;
@@ -421,6 +432,7 @@
   (function(){try{var gn=document.getElementById("goName");if(gn)gn.value=ls("qg_jarvis_name")||"";}catch(e){}})();
   (function(){var cb=document.getElementById("cfgBtn");if(cb)cb.onclick=manageBots;})();
   (function(){var bb=document.getElementById("brainBtn");if(bb)bb.onclick=setBrain;})();
+  (function(){var vb=document.getElementById("voiceBtn");if(vb)vb.onclick=pickVoiceMenu;})();
   document.getElementById("go").onclick=function(){
     var typed="";try{typed=(document.getElementById("goName").value||"").trim();}catch(e){}
     name=typed||ls("qg_jarvis_name")||"agente";lss("qg_jarvis_name",name);

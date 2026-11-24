@@ -41,7 +41,18 @@
   .run:hover{background:rgba(255,205,135,.1)}
   .run:disabled{opacity:.45}
   .chat{display:flex;flex-direction:column;gap:12px}
-  .mapwrap{border:1px solid var(--line);background:rgba(0,0,0,.2);border-radius:4px;padding:8px;overflow-x:auto}
+  .mapwrap{border:1px solid var(--line);background:rgba(0,0,0,.2);border-radius:4px;padding:8px}
+  .mapwrap .mapsvg{display:block;width:100%;height:auto}
+  .mapbtn{width:100%;margin-top:10px;border:1px solid var(--goldline);background:rgba(255,205,135,.05);color:var(--gold2);font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;padding:12px;border-radius:4px;cursor:pointer}
+  .mapbtn:hover{background:rgba(255,205,135,.1)}
+  .mapfull{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;
+    background:radial-gradient(1100px 700px at 50% 0%,rgba(255,190,100,.06),transparent 60%),#05070c;
+    padding-top:env(safe-area-inset-top,0px)}
+  .mapbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .mapbar span{font-family:var(--mono);font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+  .mapclose{border:1px solid var(--goldline);background:transparent;color:var(--gold2);font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;padding:9px 13px;border-radius:8px;cursor:pointer}
+  .mapfit{flex:1;min-height:0;display:flex;padding:10px}
+  .mapfull .mapsvg{width:100%;height:100%;display:block}
   .msg{display:flex;gap:12px;border:1px solid var(--line);background:var(--panel2);border-radius:4px;padding:14px}
   .av{width:38px;height:38px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:1.15rem;background:rgba(255,205,135,.05);border:1px solid var(--line)}
   .msg .b{min-width:0}
@@ -191,7 +202,10 @@
       }
       var rami=normRami(data);
       var obiettivo=String(data.obiettivo||goal).trim();
-      chat.innerHTML='<div class="mapwrap">'+buildMap(obiettivo,rami)+'</div>';
+      var svg=buildMap(obiettivo,rami);
+      chat.innerHTML='<div class="mapwrap">'+svg+'</div><button class="mapbtn" id="mapFs">Apri la mappa a schermo intero</button>';
+      document.getElementById("mapFs").onclick=function(){openFull(svg);};
+      openFull(svg);
       setStatus("Mappa pronta. Il team ha eseguito.");
       var piano=normPiano(data.piano);
       if(piano.length){
@@ -210,6 +224,12 @@
   };
 
   // ---- mappa concettuale ----
+  function openFull(svg){
+    var o=document.createElement("div");o.className="mapfull";
+    o.innerHTML='<div class="mapbar"><span>Mappa del team</span><button class="mapclose">chiudi ✕</button></div><div class="mapfit">'+svg+'</div>';
+    o.querySelector(".mapclose").onclick=function(){o.remove();};
+    document.body.appendChild(o);
+  }
   function normRami(data){
     var out=[];
     if(Array.isArray(data.rami)){
@@ -279,8 +299,7 @@
     });
     var pad=40;
     var vbX=minX-pad, vbY=minY-pad, vbW=(maxX-minX)+pad*2, vbH=(maxY-minY)+pad*2;
-    var pxW=Math.round(vbW);
-    return '<svg viewBox="'+vbX.toFixed(0)+' '+vbY.toFixed(0)+' '+vbW.toFixed(0)+' '+vbH.toFixed(0)+'" width="'+pxW+'" height="'+Math.round(vbH)+'" style="display:block;margin:0 auto">'+lines+c.svg+boxes+'</svg>';
+    return '<svg class="mapsvg" viewBox="'+vbX.toFixed(0)+' '+vbY.toFixed(0)+' '+vbW.toFixed(0)+' '+vbH.toFixed(0)+'" preserveAspectRatio="xMidYMid meet">'+lines+c.svg+boxes+'</svg>';
   }
 
   function normPiano(piano){

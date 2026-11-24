@@ -1,4 +1,4 @@
-const CACHE = 'qg-v9';
+const CACHE = 'qg-v10';
 const ASSETS = [
   './', 'index.html', 'radar.html', 'jarvis.html',
   'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'

@@ -439,7 +439,7 @@
         }).catch(fail);
     } else if(grq){
       fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+grq},
-        body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:SYS},{role:"user",content:q}]})})
+        body:JSON.stringify({model:"llama-3.1-8b-instant",messages:[{role:"system",content:SYS},{role:"user",content:q}]})})
         .then(function(r){return r.json();}).then(function(d){
           var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}
           if(!a&&d&&d.error){speak("La chiave Groq non va: "+((d.error&&d.error.message)||"errore")+".");done=true;clearTimeout(to);return;}

@@ -106,6 +106,7 @@
 <body>
 <div class="bar">
   <a class="back" href="index.html?menu">&#9776; stanze</a>
+  <button class="back" id="cfgBtn" style="cursor:pointer;margin-left:8px">&#9881; bot</button>
   <span class="brandtag">J.A.R.V.I.S</span>
 </div>
 
@@ -309,11 +310,42 @@
     if(/grazie/.test(s)){speak("Sempre a disposizione, "+name+".");return;}
     if(/come mi chiamo|il mio nome/.test(s)){speak("Ti chiami "+name+".");return;}
     if(/\bmenu\b|stanze|stanza|elenco/.test(s)){speak("Apro le stanze.",function(){setTimeout(function(){location.href="index.html?menu";},300);});return;}
+    if(/novit|aggiornament|\bbot\b|telegram|lollobot|sveglia/.test(s)){readBots();return;}
     askAI(raw);
   }
 
 
   // ---------- ascolto continuo (Android / computer Chrome) ----------
+  function loadBots(){try{return JSON.parse(localStorage.getItem("qg_bots")||"[]");}catch(e){return [];}}
+  function saveBots(a){try{localStorage.setItem("qg_bots",JSON.stringify(a));}catch(e){}}
+  function manageBots(){
+    var bots=loadBots();
+    var elenco=bots.length?bots.map(function(b){return b.name;}).join(", "):"nessuno";
+    var tok=prompt("Bot collegati: "+elenco+"\n\nIncolla il token di un bot Telegram (da BotFather) per aggiungerlo. Vuoto = annulla.","");
+    if(tok===null)return; tok=tok.trim(); if(!tok)return;
+    var nm=prompt("Nome per questo bot:","Bot "+(bots.length+1)); nm=(nm&&nm.trim())?nm.trim():("Bot "+(bots.length+1));
+    bots.push({name:nm,token:tok,offset:0}); saveBots(bots);
+    speak("Bot "+nm+" collegato, "+name+".");
+  }
+  function readBots(){
+    var bots=loadBots();
+    if(!bots.length){speak("Non hai ancora collegato nessun bot, "+name+". Tocca l'ingranaggio in alto e incolla il token del bot Telegram.");return;}
+    subEl.textContent="controllo i bot...";stateEl.textContent="bot";cline("controllo i bot Telegram...");
+    var summaries=[], pending=bots.length;
+    bots.forEach(function(b){
+      var u="https://api.telegram.org/bot"+encodeURIComponent(b.token)+"/getUpdates?limit=20&timeout=0"+(b.offset?("&offset="+b.offset):"");
+      fetch(u).then(function(r){return r.json();}).then(function(d){
+        if(d&&d.ok&&d.result){
+          var msgs=d.result.filter(function(x){return x.message&&x.message.text;});
+          if(msgs.length){ b.offset=d.result[d.result.length-1].update_id+1;
+            var texts=msgs.slice(-5).map(function(x){return x.message.text;});
+            summaries.push("Dal bot "+b.name+": "+msgs.length+" messaggi. "+texts.join(". "));
+          } else { summaries.push("Dal bot "+b.name+": nessuna novita."); }
+        } else { summaries.push("Il bot "+b.name+" non risponde: controlla il token."); }
+      }).catch(function(){ summaries.push("Non riesco a contattare il bot "+b.name+"."); })
+        .then(function(){ if(--pending===0){ saveBots(bots); var out=summaries.join(" "); cline(out); speak(out.slice(0,650)); } });
+    });
+  }
   function cleanAI(t){return String(t||"").replace(/[*_`#>\[\]]/g,"").replace(/\s+/g," ").trim().slice(0,600);}
   function askAI(q){
     cline("Jarvis sta pensando...");subEl.textContent="sto pensando...";stateEl.textContent="elaboro";
@@ -355,6 +387,7 @@
   }
   function afterBoot(){ stateEl.textContent="in linea"; }
   (function(){try{var gn=document.getElementById("goName");if(gn)gn.value=ls("qg_jarvis_name")||"";}catch(e){}})();
+  (function(){var cb=document.getElementById("cfgBtn");if(cb)cb.onclick=manageBots;})();
   document.getElementById("go").onclick=function(){
     var typed="";try{typed=(document.getElementById("goName").value||"").trim();}catch(e){}
     name=typed||ls("qg_jarvis_name")||"agente";lss("qg_jarvis_name",name);

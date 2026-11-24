@@ -328,13 +328,13 @@
     var s=(raw||"").toLowerCase().trim();if(!s)return;
     cline("> "+raw,true);
     if(/(ciao|salve|buongiorno|buonasera|ehi|hey)/.test(s)){speak("Salve "+name+". Sono a tua disposizione.");return;}
-    if(/che ore|\bora\b|orario/.test(s)){var d=new Date();speak("Sono le "+d.getHours()+" e "+d.getMinutes()+".");return;}
-    if(/che giorno|\bdata\b|oggi/.test(s)){var d=new Date();speak("Oggi e "+giorni[d.getDay()]+" "+d.getDate()+" "+mesi[d.getMonth()]+".");return;}
-    if(/meteo|tempo|gradi|temperatura/.test(s)){
+    if(/che ore sono|\borario\b|a che ora/.test(s)){var d=new Date();speak("Sono le "+d.getHours()+" e "+d.getMinutes()+".");return;}
+    if(/che giorno (è|e)\b|che giorno siamo|^data$|^oggi$|oggi che giorno/.test(s)){var d=new Date();speak("Oggi e "+giorni[d.getDay()]+" "+d.getDate()+" "+mesi[d.getMonth()]+".");return;}
+    if(/\bmeteo\b|che tempo|previsioni|quanti gradi|\btemperatura\b/.test(s)){
       if(lastWeather){speak("Al momento ci sono "+Math.round(lastWeather.temperature_2m)+" gradi, cielo "+meteoDesc(lastWeather.weather_code)+".");}
       else{speak("Sto leggendo il meteo, riprova tra un istante.");loadWeather();}
       return;}
-    if(/stato|sistema|come stai|tutto bene/.test(s)){speak("Tutti i sistemi sono attivi. Nessuna anomalia, "+name+".");return;}
+    if(/come stai|come va|stato del sistema|tutto bene|^stato$/.test(s)){speak("Tutti i sistemi sono attivi. Nessuna anomalia, "+name+".");return;}
     if(/radar|telecamer/.test(s)){go("radar.html","Apro il radar.");return;}
     if(/blocca|chiudi|spegni|esci/.test(s)){speak("Il blocco e disattivato, "+name+".");return;}
     if(/chi sei|come ti chiami|cosa sei/.test(s)){speak("Sono Jarvis, il tuo assistente. Al tuo servizio.");return;}

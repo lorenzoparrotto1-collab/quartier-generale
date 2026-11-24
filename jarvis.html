@@ -162,8 +162,7 @@
       <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#38e6ff" stroke-width="1.4"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
     </div>
     <h1>J.A.R.V.I.S</h1>
-    <p>Scrivi il tuo nome e tocca Attiva.</p>
-    <input id="goName" placeholder="il tuo nome" autocomplete="off" autocapitalize="words" style="display:block;width:100%;max-width:220px;margin:0 auto 14px;background:rgba(10,24,38,.85);border:1px solid var(--line);color:#dff3ff;font-family:var(--mono);font-size:.95rem;padding:11px 12px;border-radius:10px;text-align:center">
+    <p>Tocca Attiva per iniziare.</p>
     <button id="go">Attiva</button>
     <button id="voiceTest" style="display:block;margin:14px auto 0;background:none;border:0;color:var(--muted);text-decoration:underline;font-family:var(--mono);font-size:.72rem;cursor:pointer">&#128266; prova voce</button>
   </div>
@@ -172,6 +171,8 @@
 <script>
 (function(){
   "use strict";
+  var APP_VERSION="17";
+  (function(){try{fetch(location.pathname+"?cb="+Date.now(),{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){var m=t.match(/APP_VERSION="([^"]+)"/);if(m&&m[1]!==APP_VERSION){location.replace(location.pathname+"?v="+Date.now());}}).catch(function(){});}catch(e){}})();
   var speaking=false, listening=false, name="";
   var subEl=document.getElementById("sub"), stateEl=document.getElementById("state");
   var consoleEl=document.getElementById("console");

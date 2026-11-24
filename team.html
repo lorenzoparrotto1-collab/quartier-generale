@@ -170,15 +170,15 @@
     chat.innerHTML="";document.getElementById("planBox").innerHTML="";running=true;document.getElementById("run").disabled=true;
     setStatus("Il team sta discutendo...",true);
 
-    var SYS="Sei un intero team di 5 colleghi che analizza in italiano un progetto per costruirne una MAPPA CONCETTUALE. "+
+    var SYS="Sei un intero team di 5 colleghi che fa una breve riunione operativa in italiano su un progetto. "+
       "I ruoli: Stratega (obiettivo, pubblico, direzione), Sviluppatore (come realizzarlo in pratica, strumenti semplici), "+
-      "Creativo (nome, stile, comunicazione), Marketing (come farlo conoscere e crescere), Project Manager (priorita e tempi). "+
-      "Per ogni ruolo dai 2 o 3 PUNTI brevissimi (massimo 5-6 parole ciascuno), adatti a diventare nodi di una mappa. "+
+      "Creativo (nome, stile, comunicazione), Marketing (come farlo conoscere e crescere), Project Manager (coordina, priorita e tempi). "+
+      "Ogni collega scrive il suo contributo in 2-3 frasi concrete, rivolgendosi agli altri e basandosi su cosa hanno detto. Niente elenchi puntati dentro gli interventi. "+
       "Poi il team ESEGUE: per ogni passo del piano (3-4 passi) non si limita a dire cosa fare, ma produce GIA il materiale concreto, pronto da usare. "+
       "Nel campo 'fatto' scrivi il contenuto vero e completo: il testo del listino con i prezzi, il post gia scritto, la mail gia pronta, la bozza, i nomi proposti, ecc. "+
       "Se un passo richiede un'azione nel mondo reale che un assistente non puo compiere (pubblicare online, telefonare, pagare), scrivi lo stesso tutto il materiale pronto e in fondo una riga 'Da fare tu: ...'. "+
       "Rispondi SOLO con un oggetto JSON valido, senza testo prima o dopo, in questa forma esatta: "+
-      '{"obiettivo":"riformulazione breve dell obiettivo, max 8 parole","rami":[{"ruolo":"Stratega","punti":["punto breve","punto breve"]},{"ruolo":"Sviluppatore","punti":["..."]},{"ruolo":"Creativo","punti":["..."]},{"ruolo":"Marketing","punti":["..."]},{"ruolo":"Project Manager","punti":["..."]}],"piano":[{"passo":"titolo breve","fatto":"il materiale concreto gia pronto, anche lungo"}]}';
+      '{"obiettivo":"riformulazione breve dell obiettivo, max 8 parole","rami":[{"ruolo":"Stratega","testo":"il contributo completo in 2-3 frasi"},{"ruolo":"Sviluppatore","testo":"..."},{"ruolo":"Creativo","testo":"..."},{"ruolo":"Marketing","testo":"..."},{"ruolo":"Project Manager","testo":"..."}],"piano":[{"passo":"titolo breve","fatto":"il materiale concreto gia pronto, anche lungo"}]}';
 
     callAIretry(SYS, "Progetto o obiettivo: "+goal, function(ans,err){
       running=false;document.getElementById("run").disabled=false;
@@ -216,15 +216,15 @@
       data.rami.forEach(function(r){
         if(!r)return;
         var ruolo=String(r.ruolo||r.nome||r.titolo||"").trim();
-        var punti=[];
-        if(Array.isArray(r.punti))punti=r.punti.map(function(x){return String(x).trim();}).filter(Boolean);
-        else if(r.punti)punti=[String(r.punti).trim()];
-        if(ruolo)out.push({ruolo:ruolo,punti:punti.slice(0,3)});
+        var testo=r.testo||r.contributo||r.contenuto||r.punti;
+        if(Array.isArray(testo))testo=testo.join(". ");
+        testo=String(testo||"").trim();
+        if(ruolo)out.push({ruolo:ruolo,testo:testo});
       });
     }
     if(!out.length){ // fallback dal vecchio formato pm/stratega/...
       [["Stratega","stratega"],["Sviluppatore","sviluppatore"],["Creativo","creativo"],["Marketing","marketing"],["Project Manager","pm"]].forEach(function(p){
-        var t=data[p[1]];if(t&&String(t).trim())out.push({ruolo:p[0],punti:[String(t).trim()]});
+        var t=data[p[1]];if(t&&String(t).trim())out.push({ruolo:p[0],testo:String(t).trim()});
       });
     }
     return out;
@@ -241,34 +241,46 @@
     if(lines.length===maxlines){var rest=words.join(" ");if(rest.length>lines.join(" ").length){var l=lines[maxlines-1];lines[maxlines-1]=(l.length>max-1?l.slice(0,max-1):l)+"…";}}
     return lines;
   }
-  function nodeSVG(x,y,lines,o){
-    o=o||{};var fs=o.fs||13,pad=o.pad||9,lh=fs+4,maxc=0;
-    lines.forEach(function(l){if(l.length>maxc)maxc=l.length;});
-    var w=Math.max(o.minw||60,maxc*fs*0.56+pad*2),h=lines.length*lh+pad*2-4;
-    var rx=x-w/2,ry=y-h/2;
-    var s='<rect x="'+rx.toFixed(1)+'" y="'+ry.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="7" fill="'+(o.fill||"rgba(0,0,0,.35)")+'" stroke="'+(o.stroke||"rgba(255,200,120,.4)")+'" stroke-width="'+(o.sw||1)+'"/>';
-    var ty=y-(lines.length-1)*lh/2;
-    lines.forEach(function(l,i){s+='<text x="'+x.toFixed(1)+'" y="'+(ty+i*lh).toFixed(1)+'" fill="'+(o.col||"#ffe6bf")+'" font-size="'+fs+'" font-weight="'+(o.fw||400)+'" font-family="Inter,system-ui,sans-serif" text-anchor="middle" dominant-baseline="central">'+esc(l)+'</text>';});
-    return s;
+  // nodo-scatola con titolo (ruolo) + testo intero, dimensione calcolata
+  function roleBox(cx,cy,ruolo,testo){
+    var W=340, fsT=14.5, fsB=14, lh=20, pad=16, titleH=22, gap=8;
+    var maxc=Math.floor((W-pad*2)/(fsB*0.52));
+    var body=wrapText(testo,maxc,12);
+    var H=pad*2+titleH+gap+body.length*lh;
+    var x=cx-W/2, y=cy-H/2;
+    var s='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+W+'" height="'+H.toFixed(1)+'" rx="10" fill="rgba(10,14,22,.9)" stroke="rgba(255,200,120,.4)" stroke-width="1.3"/>';
+    s+='<text x="'+cx.toFixed(1)+'" y="'+(y+pad+titleH/2).toFixed(1)+'" fill="#ffcf8a" font-size="'+fsT+'" font-weight="700" letter-spacing="1.5" font-family="Inter,system-ui,sans-serif" text-anchor="middle" dominant-baseline="central">'+esc(ruolo.toUpperCase())+'</text>';
+    var by=y+pad+titleH+gap+lh/2;
+    body.forEach(function(l,i){s+='<text x="'+cx.toFixed(1)+'" y="'+(by+i*lh).toFixed(1)+'" fill="#dfe8f2" font-size="'+fsB+'" font-family="Inter,system-ui,sans-serif" text-anchor="middle" dominant-baseline="central">'+esc(l)+'</text>';});
+    return {svg:s, x:x, y:y, w:W, h:H};
+  }
+  function centerBox(cx,cy,obiettivo){
+    var W=300, fs=20, lh=26, pad=18;
+    var maxc=Math.floor((W-pad*2)/(fs*0.54));
+    var lines=wrapText(obiettivo,maxc,4);
+    var H=pad*2+lines.length*lh;
+    var x=cx-W/2,y=cy-H/2;
+    var s='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+W+'" height="'+H.toFixed(1)+'" rx="12" fill="rgba(255,205,135,.16)" stroke="rgba(255,205,135,.8)" stroke-width="2"/>';
+    var ty=y+pad+lh/2;
+    lines.forEach(function(l,i){s+='<text x="'+cx.toFixed(1)+'" y="'+(ty+i*lh).toFixed(1)+'" fill="#ffe6bf" font-size="'+fs+'" font-weight="700" font-family="Inter,system-ui,sans-serif" text-anchor="middle" dominant-baseline="central">'+esc(l)+'</text>';});
+    return {svg:s,x:x,y:y,w:W,h:H};
   }
   function buildMap(obiettivo,rami){
-    var cx=560,cy=470,R1=255,R2=440,n=rami.length||1;
-    var lines="",nodes="";
+    var cx=820,cy=720,R=520,n=rami.length||1;
+    var lines="",boxes="";
+    var minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+    function track(b){minX=Math.min(minX,b.x);minY=Math.min(minY,b.y);maxX=Math.max(maxX,b.x+b.w);maxY=Math.max(maxY,b.y+b.h);}
+    var c=centerBox(cx,cy,obiettivo);track(c);
     rami.forEach(function(r,i){
       var ang=(-90+i*(360/n))*Math.PI/180;
-      var rxp=cx+R1*Math.cos(ang),ryp=cy+R1*Math.sin(ang);
-      lines+='<line x1="'+cx+'" y1="'+cy+'" x2="'+rxp.toFixed(1)+'" y2="'+ryp.toFixed(1)+'" stroke="rgba(255,200,120,.5)" stroke-width="1.6"/>';
-      var pts=r.punti||[],m=pts.length;
-      pts.forEach(function(p,j){
-        var a2=ang+((j-(m-1)/2)*20)*Math.PI/180;
-        var px=cx+R2*Math.cos(a2),py=cy+R2*Math.sin(a2);
-        lines+='<line x1="'+rxp.toFixed(1)+'" y1="'+ryp.toFixed(1)+'" x2="'+px.toFixed(1)+'" y2="'+py.toFixed(1)+'" stroke="rgba(255,200,120,.2)" stroke-width="1"/>';
-        nodes+=nodeSVG(px,py,wrapText(p,17,2),{fs:12,fill:"rgba(10,14,22,.85)",stroke:"rgba(255,200,120,.28)",col:"#d6e3f0",sw:1,minw:54,pad:7});
-      });
-      nodes+=nodeSVG(rxp,ryp,wrapText(r.ruolo,14,2),{fs:13.5,fw:700,fill:"rgba(255,205,135,.08)",stroke:"rgba(255,200,120,.6)",col:"#ffcf8a",sw:1.4,minw:76,pad:9});
+      var bx=cx+R*Math.cos(ang),by=cy+R*Math.sin(ang);
+      lines+='<line x1="'+cx+'" y1="'+cy+'" x2="'+bx.toFixed(1)+'" y2="'+by.toFixed(1)+'" stroke="rgba(255,200,120,.45)" stroke-width="1.6"/>';
+      var b=roleBox(bx,by,r.ruolo,r.testo);track(b);boxes+=b.svg;
     });
-    var center=nodeSVG(cx,cy,wrapText(obiettivo,18,3),{fs:16,fw:700,fill:"rgba(255,205,135,.16)",stroke:"rgba(255,205,135,.75)",col:"#ffe6bf",sw:1.8,minw:130,pad:13});
-    return '<svg viewBox="-50 -30 1220 1000" width="100%" style="display:block;max-width:960px;margin:0 auto;overflow:visible">'+lines+center+nodes+'</svg>';
+    var pad=40;
+    var vbX=minX-pad, vbY=minY-pad, vbW=(maxX-minX)+pad*2, vbH=(maxY-minY)+pad*2;
+    var pxW=Math.round(vbW);
+    return '<svg viewBox="'+vbX.toFixed(0)+' '+vbY.toFixed(0)+' '+vbW.toFixed(0)+' '+vbH.toFixed(0)+'" width="'+pxW+'" height="'+Math.round(vbH)+'" style="display:block;margin:0 auto">'+lines+c.svg+boxes+'</svg>';
   }
 
   function normPiano(piano){

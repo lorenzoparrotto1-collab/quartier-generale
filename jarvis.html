@@ -438,13 +438,19 @@
           ok(a);
         }).catch(fail);
     } else if(grq){
-      fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+grq},
-        body:JSON.stringify({model:"llama-3.1-8b-instant",messages:[{role:"system",content:SYS},{role:"user",content:q}]})})
-        .then(function(r){return r.json();}).then(function(d){
-          var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}
-          if(!a&&d&&d.error){speak("La chiave Groq non va: "+((d.error&&d.error.message)||"errore")+".");done=true;clearTimeout(to);return;}
-          ok(a);
-        }).catch(fail);
+      var gmodels=["llama-3.1-8b-instant","llama3-8b-8192","gemma2-9b-it","llama-3.3-70b-versatile"];
+      (function tryG(i){
+        if(done)return;
+        if(i>=gmodels.length){fail();return;}
+        fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+grq},
+          body:JSON.stringify({model:gmodels[i],messages:[{role:"system",content:SYS},{role:"user",content:q}]})})
+          .then(function(r){return r.json();}).then(function(d){
+            var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}
+            if(a&&a.trim()){ok(a);return;}
+            if(d&&d.error){ var msg=(d.error.message||"")+""; if(/model|does not exist|access|decommission/i.test(msg)){ tryG(i+1); return; } speak("La chiave Groq non va: "+msg+".");done=true;clearTimeout(to);return; }
+            tryG(i+1);
+          }).catch(fail);
+      })(0);
     } else {
       var sysEnc=encodeURIComponent(SYS), qEnc=encodeURIComponent(q);
       var attempts=[{get:true,model:"openai"},{get:true,model:"openai-large"},{get:false,model:"openai"},{get:true,model:"mistral"}];

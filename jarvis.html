@@ -427,6 +427,8 @@
     cline("Jarvis sta pensando...");subEl.textContent="sto pensando...";stateEl.textContent="elaboro";
     var done=false, to=setTimeout(function(){if(done)return;done=true;speak("Ci sto mettendo troppo, riprova, "+name+".");},25000);
     function fail(){if(done)return;done=true;clearTimeout(to);speak("Non riesco a collegarmi al cervello, "+name+".");}
+    function failBrain(n){if(done)return;done=true;clearTimeout(to);speak("Non riesco a raggiungere "+n+" da questo dispositivo, "+name+".");}
+    function failNoKey(){if(done)return;done=true;clearTimeout(to);speak("Su questo dispositivo non c'e una chiave attiva, "+name+". Tocca il cervello e mettine una.");}
     function ok(a){if(done)return;done=true;clearTimeout(to);a=cleanAI(a);if(!a){speak("Non ho trovato una risposta, "+name+".");return;}cline(a);speak(a);}
     var SYS="Sei Jarvis, assistente personale. Rispondi SEMPRE in italiano corretto e naturale, in modo chiaro, preciso e utile. Dai la risposta giusta e completa ma concisa, adatta a essere letta ad alta voce. Niente elenchi puntati o simboli: solo frasi.";
     if(ck){
@@ -436,7 +438,7 @@
           var a="";try{a=(d&&d.content&&d.content[0]&&d.content[0].text)||"";}catch(e){}
           if(!a&&d&&d.error){speak("La chiave Claude non va: "+((d.error&&d.error.message)||"errore")+".");done=true;clearTimeout(to);return;}
           ok(a);
-        }).catch(fail);
+        }).catch(function(){failBrain("Claude");});
     } else if(gk){
       fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+encodeURIComponent(gk),{method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({system_instruction:{parts:[{text:SYS}]},contents:[{role:"user",parts:[{text:q}]}]})})
@@ -444,7 +446,7 @@
           var a="";try{a=(d&&d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&d.candidates[0].content.parts[0].text)||"";}catch(e){}
           if(!a&&d&&d.error){speak("La chiave Gemini non va: "+((d.error&&d.error.message)||"errore")+".");done=true;clearTimeout(to);return;}
           ok(a);
-        }).catch(fail);
+        }).catch(function(){failBrain("Gemini");});
     } else if(grq){
       var gmodels=["llama-3.1-8b-instant","llama3-8b-8192","gemma2-9b-it","llama-3.3-70b-versatile"];
       (function tryG(i){
@@ -457,7 +459,7 @@
             if(a&&a.trim()){ok(a);return;}
             if(d&&d.error){ var msg=(d.error.message||"")+""; if(/model|does not exist|access|decommission/i.test(msg)){ tryG(i+1); return; } speak("La chiave Groq non va: "+msg+".");done=true;clearTimeout(to);return; }
             tryG(i+1);
-          }).catch(fail);
+          }).catch(function(){failBrain("Groq");});
       })(0);
     } else if(ork){
       var ormodels=["meta-llama/llama-3.3-70b-instruct:free","meta-llama/llama-3.1-8b-instruct:free","mistralai/mistral-7b-instruct:free","google/gemini-2.0-flash-exp:free"];
@@ -471,14 +473,14 @@
             if(a&&a.trim()){ok(a);return;}
             if(d&&d.error){ var msg=(d.error.message||"")+""; if(/model|not a valid|no endpoints|not found/i.test(msg)){ tryO(i+1); return; } speak("La chiave OpenRouter non va: "+msg+".");done=true;clearTimeout(to);return; }
             tryO(i+1);
-          }).catch(fail);
+          }).catch(function(){failBrain("OpenRouter");});
       })(0);
     } else {
       var sysEnc=encodeURIComponent(SYS), qEnc=encodeURIComponent(q);
       var attempts=[{get:true,model:"openai"},{get:true,model:"openai-large"},{get:false,model:"openai"},{get:true,model:"mistral"}];
       (function tryA(i){
         if(done)return;
-        if(i>=attempts.length){fail();return;}
+        if(i>=attempts.length){failNoKey();return;}
         var at=attempts[i], p;
         if(at.get){ p=fetch("https://text.pollinations.ai/"+qEnc+"?model="+at.model+"&system="+sysEnc+"&referrer=jarvis").then(function(r){if(!r.ok)throw 0;return r.text();}).then(function(t){return (t||"").trim();}); }
         else { p=fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:at.model,messages:[{role:"system",content:SYS},{role:"user",content:q}]})}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}return (a||"").trim();}); }

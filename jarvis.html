@@ -346,19 +346,23 @@
         .then(function(){ if(--pending===0){ saveBots(bots); var out=summaries.join(" "); cline(out); speak(out.slice(0,650)); } });
     });
   }
-  function cleanAI(t){return String(t||"").replace(/[*_`#>\[\]]/g,"").replace(/\s+/g," ").trim().slice(0,600);}
+  function cleanAI(t){return String(t||"").replace(/[*_`#>\[\]]/g,"").replace(/\s+/g," ").trim().slice(0,1000);}
   function askAI(q){
     cline("Jarvis sta pensando...");subEl.textContent="sto pensando...";stateEl.textContent="elaboro";
-    var sys="Sei Jarvis, assistente personale in italiano. Rispondi sempre in italiano, breve e chiaro, massimo due frasi, tono amichevole.";
-    var prompt=sys+"\n\nDomanda: "+q+"\nRisposta:";
-    var url="https://text.pollinations.ai/"+encodeURIComponent(prompt)+"?model=openai";
-    var done=false, to=setTimeout(function(){if(done)return;done=true;speak("Ci sto mettendo troppo, riprova, "+name+".");},16000);
-    fetch(url).then(function(r){return r.text();}).then(function(t){
-      if(done)return;done=true;clearTimeout(to);
-      var ans=cleanAI(t);
-      if(!ans){speak("Non ho trovato una risposta, "+name+".");return;}
-      cline(ans);speak(ans);
-    }).catch(function(){if(done)return;done=true;clearTimeout(to);speak("Non riesco a collegarmi al cervello, "+name+".");});
+    var payload={model:"openai-large",messages:[
+      {role:"system",content:"Sei Jarvis, assistente personale. Rispondi SEMPRE in italiano corretto e naturale, in modo chiaro, preciso e utile. Dai la risposta giusta e completa ma concisa, adatta a essere letta ad alta voce. Niente elenchi puntati, niente simboli: solo frasi."},
+      {role:"user",content:q}
+    ],seed:Math.floor(Math.random()*100000)};
+    var done=false, to=setTimeout(function(){if(done)return;done=true;speak("Ci sto mettendo troppo, riprova, "+name+".");},22000);
+    function fail(){if(done)return;done=true;clearTimeout(to);speak("Non riesco a collegarmi al cervello, "+name+".");}
+    fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
+      .then(function(r){return r.json();}).then(function(d){
+        if(done)return;done=true;clearTimeout(to);
+        var ans="";try{ans=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}
+        ans=cleanAI(ans);
+        if(!ans){speak("Non ho trovato una risposta, "+name+".");return;}
+        cline(ans);speak(ans);
+      }).catch(fail);
   }
 
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition, rec=null, recActive=false, wantListen=false;

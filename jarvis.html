@@ -386,12 +386,12 @@
   }
   function cleanAI(t){return String(t||"").replace(/[*_`#>\[\]]/g,"").replace(/\s+/g," ").trim().slice(0,1000);}
   function setBrain(){
-    var scelta=prompt("Scegli il cervello di Jarvis:\n1 = Gemini di Google (GRATIS, serve una chiave gratuita, consigliato)\n2 = Claude (a PAGAMENTO, chiave sk-ant)\n3 = cervello gratuito senza chiave (poco affidabile)\n\nScrivi 1, 2 o 3","1");
+    var scelta=prompt("Scegli il cervello di Jarvis:\n1 = Gemini di Google (GRATIS)\n2 = Claude (a PAGAMENTO, chiave sk-ant)\n3 = cervello gratuito senza chiave (poco affidabile)\n4 = Groq (GRATIS, veloce)\n\nScrivi 1, 2, 3 o 4","4");
     if(scelta===null)return; scelta=scelta.trim();
     if(scelta==="1"){
       var g=prompt("Incolla la chiave Google Gemini (gratis).\nLa crei su aistudio.google.com > Get API key. Inizia con AIza...",ls("qg_gemini_key")||"");
       if(g===null)return; g=g.trim();
-      try{localStorage.removeItem("qg_claude_key");}catch(e){}
+      try{localStorage.removeItem("qg_claude_key");localStorage.removeItem("qg_groq_key");}catch(e){}
       if(g){try{localStorage.setItem("qg_gemini_key",g);}catch(e){} speak("Cervello Gemini collegato, "+name+".");}
       else{try{localStorage.removeItem("qg_gemini_key");}catch(e){} speak("Chiave Gemini tolta.");}
       return;
@@ -399,15 +399,23 @@
     if(scelta==="2"){
       var k=prompt("Incolla la chiave Claude (a pagamento, sk-ant...). Chiedi a un adulto.",ls("qg_claude_key")||"");
       if(k===null)return; k=k.trim();
-      try{localStorage.removeItem("qg_gemini_key");}catch(e){}
+      try{localStorage.removeItem("qg_gemini_key");localStorage.removeItem("qg_groq_key");}catch(e){}
       if(k){try{localStorage.setItem("qg_claude_key",k);}catch(e){} speak("Cervello Claude collegato, "+name+".");}
       else{try{localStorage.removeItem("qg_claude_key");}catch(e){} speak("Chiave Claude tolta.");}
       return;
     }
-    if(scelta==="3"){ try{localStorage.removeItem("qg_claude_key");localStorage.removeItem("qg_gemini_key");}catch(e){} speak("Torno al cervello gratuito senza chiave, "+name+"."); return; }
+    if(scelta==="3"){ try{localStorage.removeItem("qg_claude_key");localStorage.removeItem("qg_gemini_key");localStorage.removeItem("qg_groq_key");}catch(e){} speak("Torno al cervello gratuito senza chiave, "+name+"."); return; }
+    if(scelta==="4"){
+      var gr=prompt("Incolla la chiave Groq (gratis).\nLa crei su console.groq.com > API Keys. Inizia con gsk_...",ls("qg_groq_key")||"");
+      if(gr===null)return; gr=gr.trim();
+      try{localStorage.removeItem("qg_claude_key");localStorage.removeItem("qg_gemini_key");}catch(e){}
+      if(gr){try{localStorage.setItem("qg_groq_key",gr);}catch(e){} speak("Cervello Groq collegato, "+name+".");}
+      else{try{localStorage.removeItem("qg_groq_key");}catch(e){} speak("Chiave Groq tolta.");}
+      return;
+    }
   }
   function askAI(q){
-    var ck=ls("qg_claude_key")||"", gk=ls("qg_gemini_key")||"";
+    var ck=ls("qg_claude_key")||"", gk=ls("qg_gemini_key")||"", grq=ls("qg_groq_key")||"";
     cline("Jarvis sta pensando...");subEl.textContent="sto pensando...";stateEl.textContent="elaboro";
     var done=false, to=setTimeout(function(){if(done)return;done=true;speak("Ci sto mettendo troppo, riprova, "+name+".");},25000);
     function fail(){if(done)return;done=true;clearTimeout(to);speak("Non riesco a collegarmi al cervello, "+name+".");}
@@ -427,6 +435,14 @@
         .then(function(r){return r.json();}).then(function(d){
           var a="";try{a=(d&&d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&d.candidates[0].content.parts[0].text)||"";}catch(e){}
           if(!a&&d&&d.error){speak("La chiave Gemini non va: "+((d.error&&d.error.message)||"errore")+".");done=true;clearTimeout(to);return;}
+          ok(a);
+        }).catch(fail);
+    } else if(grq){
+      fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+grq},
+        body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:SYS},{role:"user",content:q}]})})
+        .then(function(r){return r.json();}).then(function(d){
+          var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}
+          if(!a&&d&&d.error){speak("La chiave Groq non va: "+((d.error&&d.error.message)||"errore")+".");done=true;clearTimeout(to);return;}
           ok(a);
         }).catch(fail);
     } else {

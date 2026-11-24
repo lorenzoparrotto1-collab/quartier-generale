@@ -321,10 +321,17 @@
   function saveBots(a){try{localStorage.setItem("qg_bots",JSON.stringify(a));}catch(e){}}
   function manageBots(){
     var bots=loadBots();
-    var elenco=bots.length?bots.map(function(b){return b.name;}).join(", "):"nessuno";
-    var tok=prompt("Bot collegati: "+elenco+"\n\nIncolla il token di un bot Telegram (da BotFather) per aggiungerlo. Vuoto = annulla.","");
+    if(bots.length){
+      var lista=bots.map(function(b,i){return (i+1)+") "+b.name;}).join("   ");
+      var scelta=prompt("I tuoi bot:  "+lista+"\n\nScrivi:\n- il NUMERO di un bot per rinominarlo\n- 'x' e il numero per toglierlo (es. x2)\n- 'nuovo' per aggiungerne uno","nuovo");
+      if(scelta===null)return; scelta=scelta.trim().toLowerCase();
+      if(/^x\s*\d+/.test(scelta)){var ri=parseInt(scelta.replace(/[^0-9]/g,""),10)-1;if(bots[ri]){var rn=bots[ri].name;bots.splice(ri,1);saveBots(bots);speak("Bot "+rn+" rimosso.");}return;}
+      if(/^\d+$/.test(scelta)){var ei=parseInt(scelta,10)-1;if(bots[ei]){var nn=prompt("Nuovo nome per "+bots[ei].name+":",bots[ei].name);if(nn&&nn.trim()){bots[ei].name=nn.trim();saveBots(bots);speak("Rinominato in "+bots[ei].name+".");}}return;}
+      if(scelta!=="nuovo")return;
+    }
+    var tok=prompt("Incolla il token di un bot Telegram (da BotFather). Vuoto = annulla.","");
     if(tok===null)return; tok=tok.trim(); if(!tok)return;
-    var nm=prompt("Nome per questo bot:","Bot "+(bots.length+1)); nm=(nm&&nm.trim())?nm.trim():("Bot "+(bots.length+1));
+    var nm=prompt("Nome per questo bot (es. trader, etf):","Bot "+(bots.length+1)); nm=(nm&&nm.trim())?nm.trim():("Bot "+(bots.length+1));
     bots.push({name:nm,token:tok,offset:0}); saveBots(bots);
     speak("Bot "+nm+" collegato, "+name+".");
   }

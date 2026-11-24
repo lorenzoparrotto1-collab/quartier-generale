@@ -269,20 +269,22 @@
   // ---------- voce ----------
   function voices(){try{return speechSynthesis.getVoices()||[];}catch(e){return [];}}
   function pickVoice(){
-    var v=voices(), pref=["alice","federica","luca","italia","google ita"];
-    for(var n=0;n<pref.length;n++){var f=v.filter(function(x){return /it/i.test(x.lang)&&x.name.toLowerCase().indexOf(pref[n])>=0;})[0];if(f)return f;}
-    return v.filter(function(x){return /it[-_]IT/i.test(x.lang);})[0]||v.filter(function(x){return /^it/i.test(x.lang);})[0]||null;
+    var v=voices(), it=v.filter(function(x){return /it[-_]IT/i.test(x.lang);});
+    if(!it.length)it=v.filter(function(x){return /^it/i.test(x.lang);});
+    return it.filter(function(x){return x.localService;})[0]||it[0]||null;
   }
   function speak(text,then){
     subEl.textContent=text;
     try{
       if(!("speechSynthesis" in window)){if(then)then();return;}
       var u=new SpeechSynthesisUtterance(text);
-      u.lang="it-IT";u.rate=0.98;u.pitch=1.02;
+      u.lang="it-IT";u.rate=0.98;u.pitch=1.02;u.volume=1;
       var vo=pickVoice();if(vo)u.voice=vo;
-      u.onstart=function(){speaking=true;stateEl.textContent="risposta";pauseRec();};
-      u.onend=function(){speaking=false;stateEl.textContent="in ascolto";if(then)then();resumeRec();};
-      u.onerror=function(){speaking=false;if(then)then();resumeRec();};
+      var ka=null;
+      u.onstart=function(){speaking=true;stateEl.textContent="risposta";pauseRec();
+        ka=setInterval(function(){try{speechSynthesis.resume();}catch(e){}},4000);};
+      u.onend=function(){if(ka){clearInterval(ka);ka=null;}speaking=false;stateEl.textContent="in ascolto";if(then)then();resumeRec();};
+      u.onerror=function(){if(ka){clearInterval(ka);ka=null;}speaking=false;if(then)then();resumeRec();};
       try{speechSynthesis.resume();}catch(_e){}
       speechSynthesis.speak(u);
     }catch(e){if(then)then();}
@@ -317,7 +319,7 @@
   function resumeRec(){ if(rec&&wantListen&&!recActive&&!speaking){try{rec.start();}catch(e){}} }
   function setupVoice(){
     if(!SR){ noVoiceFallback(); return; }
-    rec=new SR();rec.lang="it-IT";rec.interimResults=false;rec.continuous=true;
+    rec=new SR();rec.lang="it-IT";rec.interimResults=false;rec.continuous=true;rec.maxAlternatives=3;
     rec.onstart=function(){recActive=true;listening=true;if(!speaking)stateEl.textContent="in ascolto";};
     rec.onend=function(){recActive=false;listening=false; if(wantListen&&!speaking){setTimeout(function(){try{rec.start();}catch(e){}},350);} };
     rec.onerror=function(ev){recActive=false;listening=false; if(ev&&ev.error==="not-allowed"){wantListen=false;stateEl.textContent="microfono negato";} };
@@ -341,6 +343,7 @@
     var typed="";try{typed=(document.getElementById("goName").value||"").trim();}catch(e){}
     name=typed||ls("qg_jarvis_name")||"agente";lss("qg_jarvis_name",name);
     document.getElementById("activate").classList.add("hidden");
+    try{var AC=window.AudioContext||window.webkitAudioContext;if(AC){window._jac=window._jac||new AC();if(window._jac.state==="suspended")window._jac.resume();var o=window._jac.createOscillator(),g=window._jac.createGain();g.gain.value=0;o.connect(g);g.connect(window._jac.destination);o.start(0);o.stop(window._jac.currentTime+0.05);}}catch(e){}
     try{speechSynthesis.getVoices();}catch(e){}
     var h=new Date().getHours();
     var saluto=h<5?"Buonanotte":h<12?"Buongiorno":h<18?"Buon pomeriggio":"Buonasera";

@@ -386,7 +386,7 @@
   }
   function cleanAI(t){return String(t||"").replace(/[*_`#>\[\]]/g,"").replace(/\s+/g," ").trim().slice(0,1000);}
   function setBrain(){
-    var scelta=prompt("Scegli il cervello di Jarvis:\n1 = Gemini di Google (GRATIS)\n2 = Claude (a PAGAMENTO, chiave sk-ant)\n3 = cervello gratuito senza chiave (poco affidabile)\n4 = Groq (GRATIS, veloce)\n\nScrivi 1, 2, 3 o 4","4");
+    var scelta=prompt("Scegli il cervello di Jarvis:\n1 = Gemini di Google (GRATIS)\n2 = Claude (a PAGAMENTO)\n3 = gratuito senza chiave\n4 = Groq (GRATIS)\n5 = OpenRouter (GRATIS)\n\nScrivi 1, 2, 3, 4 o 5","5");
     if(scelta===null)return; scelta=scelta.trim();
     if(scelta==="1"){
       var g=prompt("Incolla la chiave Google Gemini (gratis).\nLa crei su aistudio.google.com > Get API key. Inizia con AIza...",ls("qg_gemini_key")||"");
@@ -413,9 +413,17 @@
       else{try{localStorage.removeItem("qg_groq_key");}catch(e){} speak("Chiave Groq tolta.");}
       return;
     }
+    if(scelta==="5"){
+      var orr=prompt("Incolla la chiave OpenRouter (gratis).\nLa crei su openrouter.ai > Keys. Inizia con sk-or-...",ls("qg_or_key")||"");
+      if(orr===null)return; orr=orr.trim();
+      try{localStorage.removeItem("qg_claude_key");localStorage.removeItem("qg_gemini_key");localStorage.removeItem("qg_groq_key");}catch(e){}
+      if(orr){try{localStorage.setItem("qg_or_key",orr);}catch(e){} speak("Cervello OpenRouter collegato, "+name+".");}
+      else{try{localStorage.removeItem("qg_or_key");}catch(e){} speak("Chiave OpenRouter tolta.");}
+      return;
+    }
   }
   function askAI(q){
-    var ck=ls("qg_claude_key")||"", gk=ls("qg_gemini_key")||"", grq=ls("qg_groq_key")||"";
+    var ck=ls("qg_claude_key")||"", gk=ls("qg_gemini_key")||"", grq=ls("qg_groq_key")||"", ork=ls("qg_or_key")||"";
     cline("Jarvis sta pensando...");subEl.textContent="sto pensando...";stateEl.textContent="elaboro";
     var done=false, to=setTimeout(function(){if(done)return;done=true;speak("Ci sto mettendo troppo, riprova, "+name+".");},25000);
     function fail(){if(done)return;done=true;clearTimeout(to);speak("Non riesco a collegarmi al cervello, "+name+".");}
@@ -449,6 +457,20 @@
             if(a&&a.trim()){ok(a);return;}
             if(d&&d.error){ var msg=(d.error.message||"")+""; if(/model|does not exist|access|decommission/i.test(msg)){ tryG(i+1); return; } speak("La chiave Groq non va: "+msg+".");done=true;clearTimeout(to);return; }
             tryG(i+1);
+          }).catch(fail);
+      })(0);
+    } else if(ork){
+      var ormodels=["meta-llama/llama-3.3-70b-instruct:free","meta-llama/llama-3.1-8b-instruct:free","mistralai/mistral-7b-instruct:free","google/gemini-2.0-flash-exp:free"];
+      (function tryO(i){
+        if(done)return;
+        if(i>=ormodels.length){fail();return;}
+        fetch("https://openrouter.ai/api/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+ork},
+          body:JSON.stringify({model:ormodels[i],messages:[{role:"system",content:SYS},{role:"user",content:q}]})})
+          .then(function(r){return r.json();}).then(function(d){
+            var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}
+            if(a&&a.trim()){ok(a);return;}
+            if(d&&d.error){ var msg=(d.error.message||"")+""; if(/model|not a valid|no endpoints|not found/i.test(msg)){ tryO(i+1); return; } speak("La chiave OpenRouter non va: "+msg+".");done=true;clearTimeout(to);return; }
+            tryO(i+1);
           }).catch(fail);
       })(0);
     } else {

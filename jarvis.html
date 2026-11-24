@@ -280,13 +280,31 @@
   }
   function pickVoiceMenu(){
     var v=voices().filter(function(x){return /^it/i.test(x.lang)||/it[-_]IT/i.test(x.lang);});
-    if(!v.length){alert("Nessuna voce italiana trovata. Scaricane una in Impostazioni > Accessibilita > Contenuti letti > Voci > Italiano.");return;}
-    var lista=v.map(function(x,i){return (i+1)+") "+x.name;}).join("\n");
-    var sel=prompt("Scegli la voce di Jarvis (scrivi il numero):\n"+lista,"1");
-    if(sel===null)return; var idx=parseInt(sel,10)-1;
-    if(v[idx]){try{localStorage.setItem("qg_voice_name",v[idx].name);}catch(e){} speak("Voce impostata: "+v[idx].name+".");}
+    var lines=["0) Voce AI naturale (serve internet)"].concat(v.map(function(x,i){return (i+1)+") "+x.name;}));
+    var sel=prompt("Scegli la voce di Jarvis (scrivi il numero):\n"+lines.join("\n"),"0");
+    if(sel===null)return; var n=parseInt(sel,10);
+    if(n===0){try{localStorage.setItem("qg_voice_ai","1");}catch(e){} speak("Voce AI attivata."); return;}
+    var idx=n-1;
+    if(v[idx]){try{localStorage.removeItem("qg_voice_ai");localStorage.setItem("qg_voice_name",v[idx].name);}catch(e){} speak("Voce impostata: "+v[idx].name+".");}
   }
-  function speak(text,then){
+  function aiVoiceOn(){try{return localStorage.getItem("qg_voice_ai")==="1";}catch(e){return false;}}
+  function speak(text,then){ if(aiVoiceOn()){speakViaAI(text,then);} else {speakDevice(text,then);} }
+  function speakViaAI(text,then){
+    subEl.textContent=text;
+    var ac=window._jac; if(!ac){speakDevice(text,then);return;}
+    var url="https://text.pollinations.ai/"+encodeURIComponent(text)+"?model=openai-audio&voice=nova";
+    stateEl.textContent="voce...";
+    fetch(url).then(function(r){if(!r.ok)throw 0;return r.arrayBuffer();})
+      .then(function(buf){return ac.decodeAudioData(buf);})
+      .then(function(ab){
+        try{ac.resume();}catch(e){}
+        var src=ac.createBufferSource();src.buffer=ab;src.connect(ac.destination);
+        speaking=true;stateEl.textContent="risposta";pauseRec();
+        src.onended=function(){speaking=false;stateEl.textContent="in ascolto";if(then)then();resumeRec();};
+        src.start(0);
+      }).catch(function(){ speakDevice(text,then); });
+  }
+  function speakDevice(text,then){
     subEl.textContent=text;
     try{
       if(!("speechSynthesis" in window)){if(then)then();return;}

@@ -462,20 +462,28 @@
           }).catch(function(){failBrain("Groq");});
       })(0);
     } else if(ork){
-      var ormodels=["deepseek/deepseek-chat-v3-0324:free","google/gemini-2.0-flash-exp:free","meta-llama/llama-3.3-70b-instruct:free","qwen/qwen-2.5-72b-instruct:free","mistralai/mistral-7b-instruct:free"];
       var lastErr="";
-      (function tryO(i){
-        if(done)return;
-        if(i>=ormodels.length){done=true;clearTimeout(to);var m=lastErr||"nessun modello disponibile";cline("OpenRouter dice: "+m);speak("OpenRouter non risponde: "+m);return;}
-        fetch("https://openrouter.ai/api/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+ork},
-          body:JSON.stringify({model:ormodels[i],messages:[{role:"system",content:SYS},{role:"user",content:q}]})})
-          .then(function(r){return r.json();}).then(function(d){
-            var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}
-            if(a&&a.trim()){ok(a);return;}
-            if(d&&d.error){lastErr=(d.error.message||JSON.stringify(d.error))+"";}
-            tryO(i+1);
-          }).catch(function(e){lastErr=(e&&e.message)||"rete/collegamento bloccato";tryO(i+1);});
-      })(0);
+      function orCall(models){
+        (function tryO(i){
+          if(done)return;
+          if(i>=models.length){done=true;clearTimeout(to);var m=lastErr||"nessun modello gratuito disponibile";cline("OpenRouter: "+m);speak("OpenRouter non risponde: "+m);return;}
+          fetch("https://openrouter.ai/api/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+ork},
+            body:JSON.stringify({model:models[i],messages:[{role:"system",content:SYS},{role:"user",content:q}]})})
+            .then(function(r){return r.json();}).then(function(d){
+              var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}
+              if(a&&a.trim()){ok(a);return;}
+              if(d&&d.error){lastErr=(d.error.message||JSON.stringify(d.error))+"";}
+              tryO(i+1);
+            }).catch(function(e){lastErr=(e&&e.message)||"collegamento bloccato";tryO(i+1);});
+        })(0);
+      }
+      fetch("https://openrouter.ai/api/v1/models").then(function(r){return r.json();}).then(function(md){
+        var free=[];
+        try{(md.data||[]).forEach(function(m){var p=m.pricing||{};if((p.prompt==="0"||p.prompt===0)&&(p.completion==="0"||p.completion===0))free.push(m.id);});}catch(e){}
+        if(!free.length){done=true;clearTimeout(to);speak("OpenRouter non ha modelli gratuiti disponibili adesso, "+name+".");return;}
+        free.sort(function(a,b){function sc(x){x=(x||"").toLowerCase();var v=0;if(x.indexOf("llama")>=0)v+=3;if(x.indexOf("70b")>=0||x.indexOf("72b")>=0)v+=3;if(x.indexOf("deepseek")>=0)v+=2;if(x.indexOf("instruct")>=0||x.indexOf("chat")>=0)v+=1;return -v;}return sc(a)-sc(b);});
+        orCall(free.slice(0,8));
+      }).catch(function(){failBrain("OpenRouter");});
     } else {
       var sysEnc=encodeURIComponent(SYS), qEnc=encodeURIComponent(q);
       var attempts=[{get:true,model:"openai"},{get:true,model:"openai-large"},{get:false,model:"openai"},{get:true,model:"mistral"}];

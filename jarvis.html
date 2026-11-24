@@ -469,9 +469,8 @@
 </script>
 <script>
 if("serviceWorker" in navigator){
-  var _refreshing=false;
-  navigator.serviceWorker.addEventListener("controllerchange",function(){if(_refreshing)return;_refreshing=true;location.reload();});
-  window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").then(function(reg){if(reg&&reg.update){setInterval(function(){try{reg.update();}catch(e){}},60000);}}).catch(function(){});});
+  try{navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});}).catch(function(){});}catch(e){}
+  try{if(window.caches&&caches.keys){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});}).catch(function(){});}}catch(e){}
 }
 </script>
 </body>

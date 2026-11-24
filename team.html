@@ -73,6 +73,7 @@
   @keyframes sp{to{transform:rotate(360deg)}}
   .warn{color:var(--live);font-size:.84rem;line-height:1.6}
   a.lnk{color:var(--gold)}
+  .ver{text-align:center;color:var(--muted);font-family:var(--mono);font-size:.56rem;letter-spacing:.14em;margin-top:26px;opacity:.6}
 </style>
 </head>
 <body>
@@ -90,8 +91,14 @@
   <div class="status" id="status"></div>
   <div class="chat" id="chat"></div>
   <div id="planBox"></div>
+  <div class="ver">v<span id="ver"></span></div>
 </div>
 
+<script>
+  var APP_VERSION="31";
+  document.getElementById("ver").textContent=APP_VERSION;
+  (function(){try{fetch(location.pathname+"?cb="+Date.now(),{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){var m=t.match(/APP_VERSION="([^"]+)"/);if(m&&m[1]!==APP_VERSION){location.replace(location.pathname+"?v="+Date.now());}}).catch(function(){});}catch(e){}})();
+</script>
 <script>
 (function(){
   "use strict";

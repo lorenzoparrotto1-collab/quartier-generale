@@ -58,6 +58,7 @@
   .tag{font-family:var(--mono);font-size:.54rem;color:var(--gold);letter-spacing:.08em;border:1px solid var(--goldline);border-radius:999px;padding:2px 8px;flex:none;text-transform:uppercase}
   .hint{color:var(--muted);font-size:.8rem;line-height:1.6;margin:0 0 22px}
   .hint b{color:var(--gold2);font-weight:600}
+  .ver{text-align:center;color:var(--muted);font-family:var(--mono);font-size:.56rem;letter-spacing:.14em;margin-top:26px;opacity:.6}
 </style>
 </head>
 <body>
@@ -85,8 +86,14 @@
     <form class="add" id="nForm"><input id="nIn" placeholder="una nota..." maxlength="200"><button>+</button></form>
     <ul id="nList"></ul>
   </div>
+  <div class="ver">v<span id="ver"></span></div>
 </div>
 
+<script>
+  var APP_VERSION="31";
+  document.getElementById("ver").textContent=APP_VERSION;
+  (function(){try{fetch(location.pathname+"?cb="+Date.now(),{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){var m=t.match(/APP_VERSION="([^"]+)"/);if(m&&m[1]!==APP_VERSION){location.replace(location.pathname+"?v="+Date.now());}}).catch(function(){});}catch(e){}})();
+</script>
 <script>
 (function(){
   "use strict";

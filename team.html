@@ -125,46 +125,76 @@
     try{var a=JSON.parse(localStorage.getItem("qg_agenda_v1")||"{}");(a.projects||[]).forEach(function(p){var o=document.createElement("option");o.value=p.name;o.textContent=p.name;sel.appendChild(o);});}catch(e){}
   })();
 
+  // chiamata con un paio di tentativi (per i limiti del piano gratuito)
+  function callAIretry(system,user,done){
+    var tries=0;
+    (function go(){
+      tries++;
+      callAI(system,user,function(ans,err){
+        if(ans){done(ans);return;}
+        if(tries<3){setStatus("Riprovo tra un istante...",true);setTimeout(go,1600*tries);return;}
+        done(null,err||"errore");
+      });
+    })();
+  }
+  function keyOf(label){return label.toLowerCase().replace("project manager","pm").replace(/[^a-z]/g,"");}
+  function extractJSON(t){
+    if(!t)return null;
+    var a=t.indexOf("{"), b=t.lastIndexOf("}");
+    if(a<0||b<=a)return null;
+    try{return JSON.parse(t.slice(a,b+1));}catch(e){return null;}
+  }
+
   var running=false;
   document.getElementById("run").onclick=function(){
     if(running)return;
     var goal=document.getElementById("goal").value.trim()||document.getElementById("proj").value.trim();
     if(!goal){setStatus("Scegli un progetto o scrivi un obiettivo.");return;}
-    chat.innerHTML="";document.getElementById("planBox").innerHTML="";running=true;document.getElementById("run").disabled=true;
-    var transcript="", idx=0;
-    function next(){
-      if(idx>=TEAM.length){wrapUp();return;}
-      var m=TEAM[idx];
-      setStatus(m.name+" sta pensando...",true);
-      callAI(m.role+" "+BASE, "Progetto o obiettivo: "+goal+"\n\nDiscussione del team finora:\n"+(transcript||"(inizio riunione)")+"\n\nScrivi ora il tuo contributo come "+m.name+":", function(ans,err){
-        if(ans){addMsg(m,ans);transcript+=m.name+": "+ans+"\n";}
-        else{addMsg(m,"(non riesco a collegarmi: "+(err||"errore")+")");}
-        idx++;setTimeout(next,250);
-      });
-    }
-    function wrapUp(){
-      setStatus("Il Project Manager prepara il piano...",true);
-      callAI("Sei il Project Manager. In italiano, riassumi la riunione in un PIANO con 3 o 4 prossimi passi concreti e numerati (1. 2. 3.), brevi e fattibili.","Obiettivo: "+goal+"\n\nRiunione:\n"+transcript+"\n\nScrivi il piano:",function(ans,err){
-        running=false;document.getElementById("run").disabled=false;setStatus("Riunione conclusa.");
-        if(ans){
-          var pb=document.getElementById("planBox");
-          pb.innerHTML='<div class="plan"><h3>Piano</h3><div class="tx">'+esc(ans)+'</div><button id="savePlan">Salva i passi nell\'agenda</button></div>';
-          document.getElementById("savePlan").onclick=function(){
-            try{var a=JSON.parse(localStorage.getItem("qg_agenda_v1")||"{}");a.projects=a.projects||[];a.tasks=a.tasks||[];a.notes=a.notes||[];
-              ans.split(/\n/).forEach(function(line){var t=line.replace(/^\s*\d+[.)]\s*/,"").trim();if(t&&/^\d/.test(line.trim())){a.tasks.unshift({id:"x"+Date.now().toString(36)+Math.floor(Math.random()*1000),text:t,done:false,proj:goal.slice(0,30)});}});
-              localStorage.setItem("qg_agenda_v1",JSON.stringify(a));this.textContent="Salvati nell'agenda ✓";this.disabled=true;
-            }catch(e){this.textContent="errore nel salvataggio";}
-          };
-        } else { document.getElementById("planBox").innerHTML='<div class="plan"><div class="tx">Non ho potuto preparare il piano: '+esc(err||"")+'</div></div>'; }
-      });
-    }
     // controllo cervello
     if(!(ls("qg_groq_key")||ls("qg_or_key")||ls("qg_gemini_key")||ls("qg_claude_key"))){
       setStatus("");
       document.getElementById("planBox").innerHTML='<p class="warn">Per far lavorare il team serve un cervello AI collegato. Apri J.A.R.V.I.S, tocca il cervello e metti una chiave (Groq o OpenRouter). Poi torna qui.</p>';
-      running=false;document.getElementById("run").disabled=false;return;
+      return;
     }
-    next();
+    chat.innerHTML="";document.getElementById("planBox").innerHTML="";running=true;document.getElementById("run").disabled=true;
+    setStatus("Il team sta discutendo...",true);
+
+    var SYS="Sei un intero team di 5 colleghi che fa una breve riunione operativa in italiano su un progetto. "+
+      "I ruoli: Project Manager (coordina e lancia il lavoro), Stratega (obiettivo, pubblico, direzione), "+
+      "Sviluppatore (come realizzarlo in pratica, strumenti semplici), Creativo (nome, stile, comunicazione), "+
+      "Marketing (come farlo conoscere e crescere). "+
+      "Ogni collega scrive 2-3 frasi concrete e si rivolge agli altri, basandosi su cosa hanno detto. Niente elenchi puntati dentro gli interventi. "+
+      "Poi un piano con 3-4 prossimi passi pratici e brevi. "+
+      "Rispondi SOLO con un oggetto JSON valido, senza testo prima o dopo, in questa forma esatta: "+
+      '{"pm":"...","stratega":"...","sviluppatore":"...","creativo":"...","marketing":"...","piano":["passo 1","passo 2","passo 3"]}';
+
+    callAIretry(SYS, "Progetto o obiettivo: "+goal, function(ans,err){
+      running=false;document.getElementById("run").disabled=false;
+      if(!ans){setStatus("");document.getElementById("planBox").innerHTML='<div class="plan"><div class="tx">Il team non e riuscito a collegarsi: '+esc(err||"")+'. Riprova tra un minuto, oppure cambia cervello in J.A.R.V.I.S (tasto cervello).</div></div>';return;}
+      var data=extractJSON(ans);
+      if(!data){ // mostra comunque il testo grezzo
+        setStatus("Riunione conclusa.");
+        addMsg(TEAM[0],ans);
+        return;
+      }
+      TEAM.forEach(function(m){
+        var txt=data[keyOf(m.name)];
+        if(txt&&String(txt).trim())addMsg(m,String(txt).trim());
+      });
+      setStatus("Riunione conclusa.");
+      var piano=data.piano;
+      if(Array.isArray(piano)&&piano.length){
+        var txt=piano.map(function(p,i){return (i+1)+". "+String(p).trim();}).join("\n");
+        var pb=document.getElementById("planBox");
+        pb.innerHTML='<div class="plan"><h3>Piano</h3><div class="tx">'+esc(txt)+'</div><button id="savePlan">Salva i passi nell\'agenda</button></div>';
+        document.getElementById("savePlan").onclick=function(){
+          try{var a=JSON.parse(localStorage.getItem("qg_agenda_v1")||"{}");a.projects=a.projects||[];a.tasks=a.tasks||[];a.notes=a.notes||[];
+            piano.forEach(function(p){var t=String(p).replace(/^\s*\d+[.)]\s*/,"").trim();if(t){a.tasks.unshift({id:"x"+Date.now().toString(36)+Math.floor(Math.random()*1000),text:t,done:false,proj:goal.slice(0,30)});}});
+            localStorage.setItem("qg_agenda_v1",JSON.stringify(a));this.textContent="Salvati nell'agenda ✓";this.disabled=true;
+          }catch(e){this.textContent="errore nel salvataggio";}
+        };
+      }
+    });
   };
 })();
 </script>

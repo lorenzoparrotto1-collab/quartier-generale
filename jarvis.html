@@ -171,7 +171,7 @@
 <script>
 (function(){
   "use strict";
-  var APP_VERSION="21";
+  var APP_VERSION="22";
   (function(){try{fetch(location.pathname+"?cb="+Date.now(),{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){var m=t.match(/APP_VERSION="([^"]+)"/);if(m&&m[1]!==APP_VERSION){location.replace(location.pathname+"?v="+Date.now());}}).catch(function(){});}catch(e){}})();
   var speaking=false, listening=false, name="";
   var subEl=document.getElementById("sub"), stateEl=document.getElementById("state");
@@ -336,9 +336,9 @@
     if(/come mi chiamo|il mio nome/.test(s)){speak("Ti chiami "+name+".");return;}
     if(/\bmenu\b|stanze|stanza|elenco/.test(s)){speak("Apro le stanze.",function(){setTimeout(function(){location.href="index.html?menu";},300);});return;}
     var ma;
-    if(ma=raw.match(/^(?:aggiungi (?:un |il )?progetto|nuovo progetto)\s+(.+)/i)){agAddProject(ma[1].trim());return;}
-    if(ma=raw.match(/^(?:ricordami(?: di| che)?|aggiungi (?:un )?compito|devo|metti tra le cose da fare)\s+(.+)/i)){agAddTask(ma[1].trim());return;}
-    if(ma=raw.match(/^(?:prendi nota|segnati|nota[: ])\s*(.+)/i)){agAddNote(ma[1].trim());return;}
+    if(ma=raw.match(/^(?:aggiungi|crea|fai|nuovo)(?: un| il)? progetto\s+(.+)/i)){agAddProject(ma[1].trim());return;}
+    if(ma=raw.match(/^(?:ricordami(?: di| che)?|(?:aggiungi|crea)(?: un)? compito|devo|metti tra le cose da fare)\s+(.+)/i)){agAddTask(ma[1].trim());return;}
+    if(ma=raw.match(/^(?:prendi nota|(?:crea|aggiungi)(?: una)? nota|segnati|nota[: ])\s*(.+)/i)){agAddNote(ma[1].trim());return;}
     if(ma=raw.match(/^(?:ho fatto|fatto|segna fatto|completato|ho completato)\s+(.+)/i)){agDone(ma[1].trim());return;}
     if(/cosa devo fare|le mie cose|i miei compiti|cose da fare|^agenda$/.test(s)){agReadTasks();return;}
     if(/i miei progetti|quali progetti|lista progetti|^progetti$/.test(s)){agReadProjects();return;}

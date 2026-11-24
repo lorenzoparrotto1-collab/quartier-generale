@@ -171,7 +171,7 @@
 <script>
 (function(){
   "use strict";
-  var APP_VERSION="17";
+  var APP_VERSION="18";
   (function(){try{fetch(location.pathname+"?cb="+Date.now(),{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){var m=t.match(/APP_VERSION="([^"]+)"/);if(m&&m[1]!==APP_VERSION){location.replace(location.pathname+"?v="+Date.now());}}).catch(function(){});}catch(e){}})();
   var speaking=false, listening=false, name="";
   var subEl=document.getElementById("sub"), stateEl=document.getElementById("state");
@@ -522,19 +522,21 @@
   (function(){var cb=document.getElementById("cfgBtn");if(cb)cb.onclick=manageBots;})();
   (function(){var bb=document.getElementById("brainBtn");if(bb)bb.onclick=setBrain;})();
   (function(){var vb=document.getElementById("voiceBtn");if(vb)vb.onclick=pickVoiceMenu;})();
-  document.getElementById("go").onclick=function(){
-    var typed="";try{typed=(document.getElementById("goName").value||"").trim();}catch(e){}
-    name=typed||ls("qg_jarvis_name")||"agente";lss("qg_jarvis_name",name);
-    document.getElementById("activate").classList.add("hidden");
+  // avvio diretto, senza schermata Attiva
+  name=ls("qg_jarvis_name")||"agente";
+  (function(){var a=document.getElementById("activate");if(a)a.classList.add("hidden");})();
+  setupVoice();
+  boot();
+  loadWeather();
+  function doActivate(){
+    if(window._awoke)return; window._awoke=true;
     try{var AC=window.AudioContext||window.webkitAudioContext;if(AC){window._jac=window._jac||new AC();if(window._jac.state==="suspended")window._jac.resume();var o=window._jac.createOscillator(),g=window._jac.createGain();g.gain.value=0;o.connect(g);g.connect(window._jac.destination);o.start(0);o.stop(window._jac.currentTime+0.05);}}catch(e){}
     try{speechSynthesis.getVoices();}catch(e){}
     var h=new Date().getHours();
     var saluto=h<5?"Buonanotte":h<12?"Buongiorno":h<18?"Buon pomeriggio":"Buonasera";
     speakDevice(saluto+" "+name+". Sono Jarvis, in ascolto.",function(){wantListen=true;});
-    setupVoice();
-    boot();
-    loadWeather();
-  };
+  }
+  ["pointerdown","keydown"].forEach(function(ev){document.addEventListener(ev,doActivate);});
   try{if(speechSynthesis && speechSynthesis.onvoiceschanged===null)speechSynthesis.onvoiceschanged=function(){};}catch(e){}
 })();
 </script>

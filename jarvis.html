@@ -221,34 +221,27 @@
     },function(){document.getElementById("sky").textContent="posizione negata";},{timeout:10000});
   }
 
-  // ---------- reattore ----------
+  // ---------- globo di particelle ----------
   var cv=document.getElementById("reactor"),ctx=cv.getContext("2d"),t=0;
+  var N=150, pts=[];
+  (function(){var ga=Math.PI*(3-Math.sqrt(5));for(var i=0;i<N;i++){var y=1-(i/(N-1))*2;var r=Math.sqrt(1-y*y);var th=ga*i;pts.push({x:Math.cos(th)*r,y:y,z:Math.sin(th)*r});}})();
+  var pairs=[];
+  for(var pi=0;pi<N;pi++){for(var pj=pi+1;pj<N;pj++){var dx=pts[pi].x-pts[pj].x,dy=pts[pi].y-pts[pj].y,dz=pts[pi].z-pts[pj].z;if(dx*dx+dy*dy+dz*dz<0.13)pairs.push([pi,pj]);}}
   function rsize(){var r=cv.getBoundingClientRect();cv.width=r.width*2;cv.height=r.height*2;}
   function drawReactor(){
-    rsize();var w=cv.width,h=cv.height,cx=w/2,cy=h/2,R=Math.min(w,h)/2-8;
+    rsize();var w=cv.width,h=cv.height,cx=w/2,cy=h/2,R=Math.min(w,h)/2-10;
     ctx.clearRect(0,0,w,h);
-    var pulse=speaking?(0.72+0.28*Math.abs(Math.sin(t*0.5))):(listening?(0.6+0.2*Math.sin(t*0.18)):(0.5+0.08*Math.sin(t*0.08)));
-    // bagliore centrale
-    var g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*0.55*pulse+R*0.2);
-    g.addColorStop(0,"rgba(220,245,255,"+(0.9*pulse)+")");
-    g.addColorStop(0.3,"rgba(56,230,255,"+(0.6*pulse)+")");
-    g.addColorStop(1,"rgba(56,230,255,0)");
-    ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
-    // anelli segmentati
-    function ring(rad,seg,speed,width,alpha){
-      ctx.save();ctx.translate(cx,cy);ctx.rotate(t*speed);
-      ctx.strokeStyle="rgba(67,180,255,"+alpha+")";ctx.lineWidth=width;
-      for(var i=0;i<seg;i++){var a0=(i/seg)*Math.PI*2,a1=a0+(Math.PI*2/seg)*0.62;
-        ctx.beginPath();ctx.arc(0,0,rad,a0,a1);ctx.stroke();}
-      ctx.restore();
-    }
-    ring(R*0.86,3,0.006,6,0.5);
-    ring(R*0.72,24,-0.012,3,0.4);
-    ring(R*0.58,8,0.02,5,0.6);
-    ring(R*0.44,40,-0.03,2,0.35);
-    // nucleo
-    ctx.fillStyle="rgba(230,250,255,"+(0.85*pulse)+")";
-    ctx.beginPath();ctx.arc(cx,cy,R*0.16*(0.9+0.2*pulse),0,7);ctx.fill();
+    var pulse=speaking?(0.85+0.2*Math.abs(Math.sin(t*0.4))):(listening?(0.75+0.1*Math.sin(t*0.12)):(0.65+0.05*Math.sin(t*0.06)));
+    var ang=t*0.006, ca=Math.cos(ang), sa=Math.sin(ang);
+    var g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*1.05);
+    g.addColorStop(0,"rgba(255,215,130,"+(0.30*pulse)+")");
+    g.addColorStop(0.5,"rgba(255,170,70,"+(0.09*pulse)+")");
+    g.addColorStop(1,"rgba(255,160,60,0)");
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*1.05,0,7);ctx.fill();
+    var P=[];
+    for(var i=0;i<N;i++){var p=pts[i];var X=p.x*ca-p.z*sa;var Z=p.x*sa+p.z*ca;P.push({x:cx+X*R*0.9,y:cy+p.y*R*0.9,z:Z});}
+    for(var k=0;k<pairs.length;k++){var a=P[pairs[k][0]],b=P[pairs[k][1]];var al=((a.z+b.z)/2+1)/2;ctx.strokeStyle="rgba(255,190,90,"+(0.06+0.22*al)+")";ctx.lineWidth=0.7+al*0.9;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+    for(var i2=0;i2<N;i2++){var q=P[i2];var al2=(q.z+1)/2;var rad=(1+al2*2.4)*pulse;ctx.fillStyle="rgba(255,"+Math.floor(200+45*al2)+","+Math.floor(110+70*al2)+","+(0.35+0.6*al2)+")";ctx.beginPath();ctx.arc(q.x,q.y,rad,0,7);ctx.fill();}
     t++;requestAnimationFrame(drawReactor);
   }
   drawReactor();

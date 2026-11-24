@@ -171,7 +171,7 @@
 <script>
 (function(){
   "use strict";
-  var APP_VERSION="18";
+  var APP_VERSION="19";
   (function(){try{fetch(location.pathname+"?cb="+Date.now(),{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){var m=t.match(/APP_VERSION="([^"]+)"/);if(m&&m[1]!==APP_VERSION){location.replace(location.pathname+"?v="+Date.now());}}).catch(function(){});}catch(e){}})();
   var speaking=false, listening=false, name="";
   var subEl=document.getElementById("sub"), stateEl=document.getElementById("state");
@@ -335,12 +335,31 @@
     if(/grazie/.test(s)){speak("Sempre a disposizione, "+name+".");return;}
     if(/come mi chiamo|il mio nome/.test(s)){speak("Ti chiami "+name+".");return;}
     if(/\bmenu\b|stanze|stanza|elenco/.test(s)){speak("Apro le stanze.",function(){setTimeout(function(){location.href="index.html?menu";},300);});return;}
+    var ma;
+    if(ma=raw.match(/^(?:aggiungi (?:un |il )?progetto|nuovo progetto)\s+(.+)/i)){agAddProject(ma[1].trim());return;}
+    if(ma=raw.match(/^(?:ricordami(?: di| che)?|aggiungi (?:un )?compito|devo|metti tra le cose da fare)\s+(.+)/i)){agAddTask(ma[1].trim());return;}
+    if(ma=raw.match(/^(?:prendi nota|segnati|nota[: ])\s*(.+)/i)){agAddNote(ma[1].trim());return;}
+    if(ma=raw.match(/^(?:ho fatto|fatto|segna fatto|completato|ho completato)\s+(.+)/i)){agDone(ma[1].trim());return;}
+    if(/cosa devo fare|le mie cose|i miei compiti|cose da fare|^agenda$/.test(s)){agReadTasks();return;}
+    if(/i miei progetti|quali progetti|lista progetti|^progetti$/.test(s)){agReadProjects();return;}
+    if(/le mie note|cosa ho segnato|leggi(mi)? (le )?note|^note$/.test(s)){agReadNotes();return;}
+    if(/apri (l'?)?agenda|apri i (miei )?progetti/.test(s)){go("agenda.html","Apro l'agenda.");return;}
     if(/novit|aggiornament|\bbot\b|telegram|lollobot|sveglia/.test(s)){readBots();return;}
     askAI(raw);
   }
 
 
   // ---------- ascolto continuo (Android / computer Chrome) ----------
+  function agLoad(){try{var r=localStorage.getItem("qg_agenda_v1");if(r){var o=JSON.parse(r);return{projects:o.projects||[],tasks:o.tasks||[],notes:o.notes||[]};}}catch(e){}return{projects:[],tasks:[],notes:[]};}
+  function agSave(a){try{localStorage.setItem("qg_agenda_v1",JSON.stringify(a));}catch(e){}}
+  function agUid(){return "x"+Date.now().toString(36)+Math.floor(Math.random()*1000);}
+  function agAddTask(t){if(!t)return;var a=agLoad();a.tasks.unshift({id:agUid(),text:t,done:false,proj:""});agSave(a);speak("Segnato tra le cose da fare: "+t);}
+  function agAddProject(p){if(!p)return;var a=agLoad();a.projects.push({id:agUid(),name:p});agSave(a);speak("Progetto aggiunto: "+p);}
+  function agAddNote(n){if(!n)return;var a=agLoad();a.notes.unshift({id:agUid(),text:n,ts:Date.now()});agSave(a);speak("Nota salvata, "+name+".");}
+  function agReadTasks(){var a=agLoad();var pend=a.tasks.filter(function(x){return !x.done;});if(!pend.length){speak("Non hai cose da fare, "+name+".");return;}var l=pend.slice(0,6).map(function(x){return x.text;});speak("Hai "+pend.length+" cose da fare. "+l.join(". "));}
+  function agReadProjects(){var a=agLoad();if(!a.projects.length){speak("Non hai progetti salvati, "+name+".");return;}speak("I tuoi progetti sono: "+a.projects.map(function(x){return x.name;}).join(", ")+".");}
+  function agReadNotes(){var a=agLoad();if(!a.notes.length){speak("Non hai note, "+name+".");return;}speak("Le tue note: "+a.notes.slice(0,6).map(function(x){return x.text;}).join(". "));}
+  function agDone(txt){var a=agLoad();var found=null;txt=(txt||"").toLowerCase();for(var i=0;i<a.tasks.length;i++){if(!a.tasks[i].done&&a.tasks[i].text.toLowerCase().indexOf(txt)>=0){found=a.tasks[i];break;}}if(found){found.done=true;agSave(a);speak("Fatto: "+found.text);}else{speak("Non trovo quel compito, "+name+".");}}
   function loadBots(){try{return JSON.parse(localStorage.getItem("qg_bots")||"[]");}catch(e){return [];}}
   function saveBots(a){try{localStorage.setItem("qg_bots",JSON.stringify(a));}catch(e){}}
   function manageBots(){

@@ -165,6 +165,7 @@
     <p>Scrivi il tuo nome e tocca Attiva.</p>
     <input id="goName" placeholder="il tuo nome" autocomplete="off" autocapitalize="words" style="display:block;width:100%;max-width:220px;margin:0 auto 14px;background:rgba(10,24,38,.85);border:1px solid var(--line);color:#dff3ff;font-family:var(--mono);font-size:.95rem;padding:11px 12px;border-radius:10px;text-align:center">
     <button id="go">Attiva</button>
+    <button id="voiceTest" style="display:block;margin:14px auto 0;background:none;border:0;color:var(--muted);text-decoration:underline;font-family:var(--mono);font-size:.72rem;cursor:pointer">&#128266; prova voce</button>
   </div>
 </div>
 
@@ -448,6 +449,7 @@
   }
   function afterBoot(){ stateEl.textContent="in linea"; }
   (function(){try{var gn=document.getElementById("goName");if(gn)gn.value=ls("qg_jarvis_name")||"";}catch(e){}})();
+  (function(){var vt=document.getElementById("voiceTest");if(vt)vt.onclick=function(){try{var AC=window.AudioContext||window.webkitAudioContext;if(AC){window._jac=window._jac||new AC();if(window._jac.state==="suspended")window._jac.resume();}}catch(e){}var u=new SpeechSynthesisUtterance("prova voce, uno, due, tre, mi senti?");u.lang="it-IT";u.volume=1;try{speechSynthesis.resume();}catch(e){}try{speechSynthesis.speak(u);}catch(e){}};})();
   (function(){var cb=document.getElementById("cfgBtn");if(cb)cb.onclick=manageBots;})();
   (function(){var bb=document.getElementById("brainBtn");if(bb)bb.onclick=setBrain;})();
   (function(){var vb=document.getElementById("voiceBtn");if(vb)vb.onclick=pickVoiceMenu;})();

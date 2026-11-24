@@ -171,7 +171,7 @@
 <script>
 (function(){
   "use strict";
-  var APP_VERSION="19";
+  var APP_VERSION="20";
   (function(){try{fetch(location.pathname+"?cb="+Date.now(),{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){var m=t.match(/APP_VERSION="([^"]+)"/);if(m&&m[1]!==APP_VERSION){location.replace(location.pathname+"?v="+Date.now());}}).catch(function(){});}catch(e){}})();
   var speaking=false, listening=false, name="";
   var subEl=document.getElementById("sub"), stateEl=document.getElementById("state");
@@ -344,6 +344,7 @@
     if(/i miei progetti|quali progetti|lista progetti|^progetti$/.test(s)){agReadProjects();return;}
     if(/le mie note|cosa ho segnato|leggi(mi)? (le )?note|^note$/.test(s)){agReadNotes();return;}
     if(/apri (l'?)?agenda|apri i (miei )?progetti/.test(s)){go("agenda.html","Apro l'agenda.");return;}
+    if(/riunisci (il )?team|apri (il )?team|^team$|fai lavorare il team|riunione/.test(s)){go("team.html","Riunisco il team.");return;}
     if(/novit|aggiornament|\bbot\b|telegram|lollobot|sveglia/.test(s)){readBots();return;}
     askAI(raw);
   }

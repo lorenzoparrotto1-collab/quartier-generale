@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#04080f">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-title" content="Team">
+<title>Team</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root{
+    --bg:#04080f; --panel:#0e1a28; --panel2:#0a1420; --line:#163048; --fg:#cfe3f0; --muted:#6f90a8;
+    --blue:#43b4ff; --cyan:#38e6ff; --gold:#ffc46a; --live:#ff5d73; --ok:#35e09a;
+    --mono:"Space Mono",ui-monospace,Menlo,Consolas,monospace; --sans:"Inter",system-ui,sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{min-height:100%}
+  body{margin:0;font-family:var(--sans);color:var(--fg);min-height:100dvh;
+    background:radial-gradient(900px 500px at 50% -10%,rgba(67,180,255,.06),transparent 55%),var(--bg);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:680px;margin:0 auto;
+    padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+    padding-block:calc(14px + env(safe-area-inset-top,0px)) 40px}
+  .top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .back{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:8px 11px;border-radius:9px;background:var(--panel)}
+  h1{font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;font-size:1.05rem;margin:0}
+  .setup{border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--panel2));border-radius:14px;padding:14px;margin-bottom:16px}
+  label{display:block;font-size:.72rem;color:var(--muted);margin:0 0 5px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase}
+  select,input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-family:var(--sans);font-size:.95rem;padding:10px 11px;border-radius:9px;margin-bottom:11px}
+  select:focus,input:focus{outline:none;border-color:var(--cyan)}
+  .run{width:100%;border:1px solid rgba(56,230,255,.5);background:var(--panel);color:var(--cyan);font-family:var(--mono);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;padding:13px;border-radius:11px;cursor:pointer}
+  .run:disabled{opacity:.5}
+  .chat{display:flex;flex-direction:column;gap:12px}
+  .msg{display:flex;gap:11px;border:1px solid var(--line);background:var(--panel2);border-radius:12px;padding:12px}
+  .av{width:40px;height:40px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:1.3rem;background:var(--panel);border:1px solid var(--line)}
+  .msg .b{min-width:0}
+  .msg .nm{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;margin-bottom:4px}
+  .msg .tx{font-size:.9rem;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+  .msg.pm .nm{color:var(--cyan)}
+  .plan{border:1px solid rgba(53,224,154,.4);background:rgba(53,224,154,.06);border-radius:12px;padding:14px;margin-top:14px}
+  .plan h3{margin:0 0 8px;font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ok)}
+  .plan .tx{font-size:.9rem;line-height:1.6;white-space:pre-wrap}
+  .plan button{margin-top:12px;border:1px solid rgba(53,224,154,.5);background:transparent;color:var(--ok);font-family:var(--mono);font-size:.7rem;padding:9px 13px;border-radius:9px;cursor:pointer}
+  .status{font-family:var(--mono);font-size:.72rem;color:var(--muted);margin:14px 0;min-height:18px}
+  .spin{display:inline-block;width:11px;height:11px;border:2px solid var(--muted);border-top-color:var(--cyan);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-1px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .warn{color:var(--live);font-size:.84rem;line-height:1.5}
+  a.lnk{color:var(--cyan)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="back" href="index.html?menu">&lsaquo; QG</a><h1>Team del progetto</h1></div>
+
+  <div class="setup">
+    <label>Progetto</label>
+    <select id="proj"></select>
+    <label>Oppure scrivi l'obiettivo</label>
+    <input id="goal" placeholder="es. lanciare il mio canale TikTok" maxlength="140">
+    <button class="run" id="run">Riunisci il team</button>
+  </div>
+
+  <div class="status" id="status"></div>
+  <div class="chat" id="chat"></div>
+  <div id="planBox"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  function ls(k){try{return localStorage.getItem(k)||"";}catch(e){return "";}}
+  function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
+
+  // ---- team ----
+  var TEAM=[
+    {name:"Project Manager",emoji:"🧭",pm:true,role:"Sei il Project Manager del team. Coordini, tieni il focus sull'obiettivo e fai partire il lavoro con una frase."},
+    {name:"Stratega",emoji:"♟️",role:"Sei lo Stratega. Definisci l'obiettivo chiave, il pubblico e la direzione in modo concreto."},
+    {name:"Sviluppatore",emoji:"🛠️",role:"Sei lo Sviluppatore tecnico. Spieghi COME realizzarlo concretamente, con strumenti semplici e passi fattibili."},
+    {name:"Creativo",emoji:"🎨",role:"Sei il Creativo e Designer. Proponi l'aspetto, un nome, lo stile e la comunicazione."},
+    {name:"Marketing",emoji:"📣",role:"Sei il responsabile Marketing. Dici come farlo conoscere e crescere, con idee pratiche."}
+  ];
+  var BASE="Rispondi in italiano, massimo 2-3 frasi, in modo concreto. Parli come in una riunione di team: ti rivolgi ai colleghi e ti basi su quello che hanno gia detto. Niente elenchi puntati, solo frasi.";
+
+  // ---- chiamata AI (usa le chiavi gia impostate in J.A.R.V.I.S) ----
+  var _orModel=null;
+  function callAI(system,user,done){
+    var groq=ls("qg_groq_key"),or=ls("qg_or_key"),gem=ls("qg_gemini_key"),cla=ls("qg_claude_key");
+    function fail(m){done(null,m||"cervello non collegato");}
+    if(groq){
+      var gm=["llama-3.1-8b-instant","llama3-8b-8192","gemma2-9b-it"];
+      (function tg(i){if(i>=gm.length){fail("Groq non risponde");return;}
+        fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+groq},body:JSON.stringify({model:gm[i],messages:[{role:"system",content:system},{role:"user",content:user}]})}).then(function(r){return r.json();}).then(function(d){var a=d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content;if(a&&a.trim()){done(a.trim());return;}if(d&&d.error&&/model|decommission|does not exist|access/i.test(d.error.message||"")){tg(i+1);return;}fail((d.error&&d.error.message)||"Groq");}).catch(function(){fail("Groq irraggiungibile");});
+      })(0);
+    } else if(or){
+      function orGo(models){(function to(i){if(i>=models.length){fail("OpenRouter non risponde");return;}fetch("https://openrouter.ai/api/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+or},body:JSON.stringify({model:models[i],messages:[{role:"system",content:system},{role:"user",content:user}]})}).then(function(r){return r.json();}).then(function(d){var a=d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content;if(a&&a.trim()){done(a.trim());return;}to(i+1);}).catch(function(){to(i+1);});})(0);}
+      if(_orModel){orGo([_orModel]);}
+      else{fetch("https://openrouter.ai/api/v1/models").then(function(r){return r.json();}).then(function(md){var free=[];(md.data||[]).forEach(function(m){var p=m.pricing||{};if((p.prompt==="0"||p.prompt===0)&&(p.completion==="0"||p.completion===0))free.push(m.id);});free.sort(function(a,b){function sc(x){x=(x||"").toLowerCase();var v=0;if(x.indexOf("llama")>=0)v+=3;if(x.indexOf("70b")>=0||x.indexOf("72b")>=0)v+=3;if(x.indexOf("deepseek")>=0)v+=2;return -v;}return sc(a)-sc(b);});if(!free.length){fail("nessun modello gratis su OpenRouter");return;}_orModel=free[0];orGo(free.slice(0,4));}).catch(function(){fail("OpenRouter irraggiungibile");});}
+    } else if(gem){
+      fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+encodeURIComponent(gem),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({system_instruction:{parts:[{text:system}]},contents:[{role:"user",parts:[{text:user}]}]})}).then(function(r){return r.json();}).then(function(d){var a="";try{a=d.candidates[0].content.parts[0].text;}catch(e){}if(a&&a.trim())done(a.trim());else fail("Gemini");}).catch(function(){fail("Gemini irraggiungibile");});
+    } else if(cla){
+      fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cla,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-3-5-haiku-latest",max_tokens:350,system:system,messages:[{role:"user",content:user}]})}).then(function(r){return r.json();}).then(function(d){var a="";try{a=d.content[0].text;}catch(e){}if(a&&a.trim())done(a.trim());else fail("Claude");}).catch(function(){fail("Claude irraggiungibile");});
+    } else {
+      fetch("https://text.pollinations.ai/"+encodeURIComponent(user)+"?model=openai&system="+encodeURIComponent(system)+"&referrer=jarvis").then(function(r){return r.text();}).then(function(t){t=(t||"").trim();if(t&&t.charAt(0)!=="<")done(t);else fail("cervello gratuito occupato");}).catch(function(){fail("nessun cervello collegato");});
+    }
+  }
+
+  // ---- UI ----
+  var chat=document.getElementById("chat"), statusEl=document.getElementById("status");
+  function addMsg(m,text){
+    var el=document.createElement("div");el.className="msg"+(m.pm?" pm":"");
+    el.innerHTML='<div class="av">'+m.emoji+'</div><div class="b"><div class="nm">'+esc(m.name)+'</div><div class="tx">'+esc(text)+'</div></div>';
+    chat.appendChild(el);el.scrollIntoView({block:"nearest"});
+  }
+  function setStatus(t,busy){statusEl.innerHTML=(busy?'<span class="spin"></span>':'')+esc(t);}
+
+  // progetti dal registro agenda
+  (function(){
+    var sel=document.getElementById("proj");
+    sel.innerHTML='<option value="">— scegli un progetto —</option>';
+    try{var a=JSON.parse(localStorage.getItem("qg_agenda_v1")||"{}");(a.projects||[]).forEach(function(p){var o=document.createElement("option");o.value=p.name;o.textContent=p.name;sel.appendChild(o);});}catch(e){}
+  })();
+
+  var running=false;
+  document.getElementById("run").onclick=function(){
+    if(running)return;
+    var goal=document.getElementById("goal").value.trim()||document.getElementById("proj").value.trim();
+    if(!goal){setStatus("Scegli un progetto o scrivi un obiettivo.");return;}
+    chat.innerHTML="";document.getElementById("planBox").innerHTML="";running=true;document.getElementById("run").disabled=true;
+    var transcript="", idx=0;
+    function next(){
+      if(idx>=TEAM.length){wrapUp();return;}
+      var m=TEAM[idx];
+      setStatus(m.name+" sta pensando...",true);
+      callAI(m.role+" "+BASE, "Progetto o obiettivo: "+goal+"\n\nDiscussione del team finora:\n"+(transcript||"(inizio riunione)")+"\n\nScrivi ora il tuo contributo come "+m.name+":", function(ans,err){
+        if(ans){addMsg(m,ans);transcript+=m.name+": "+ans+"\n";}
+        else{addMsg(m,"(non riesco a collegarmi: "+(err||"errore")+")");}
+        idx++;setTimeout(next,250);
+      });
+    }
+    function wrapUp(){
+      setStatus("Il Project Manager prepara il piano...",true);
+      callAI("Sei il Project Manager. In italiano, riassumi la riunione in un PIANO con 3 o 4 prossimi passi concreti e numerati (1. 2. 3.), brevi e fattibili.","Obiettivo: "+goal+"\n\nRiunione:\n"+transcript+"\n\nScrivi il piano:",function(ans,err){
+        running=false;document.getElementById("run").disabled=false;setStatus("Riunione conclusa.");
+        if(ans){
+          var pb=document.getElementById("planBox");
+          pb.innerHTML='<div class="plan"><h3>Piano</h3><div class="tx">'+esc(ans)+'</div><button id="savePlan">Salva i passi nell\'agenda</button></div>';
+          document.getElementById("savePlan").onclick=function(){
+            try{var a=JSON.parse(localStorage.getItem("qg_agenda_v1")||"{}");a.projects=a.projects||[];a.tasks=a.tasks||[];a.notes=a.notes||[];
+              ans.split(/\n/).forEach(function(line){var t=line.replace(/^\s*\d+[.)]\s*/,"").trim();if(t&&/^\d/.test(line.trim())){a.tasks.unshift({id:"x"+Date.now().toString(36)+Math.floor(Math.random()*1000),text:t,done:false,proj:goal.slice(0,30)});}});
+              localStorage.setItem("qg_agenda_v1",JSON.stringify(a));this.textContent="Salvati nell'agenda ✓";this.disabled=true;
+            }catch(e){this.textContent="errore nel salvataggio";}
+          };
+        } else { document.getElementById("planBox").innerHTML='<div class="plan"><div class="tx">Non ho potuto preparare il piano: '+esc(err||"")+'</div></div>'; }
+      });
+    }
+    // controllo cervello
+    if(!(ls("qg_groq_key")||ls("qg_or_key")||ls("qg_gemini_key")||ls("qg_claude_key"))){
+      setStatus("");
+      document.getElementById("planBox").innerHTML='<p class="warn">Per far lavorare il team serve un cervello AI collegato. Apri J.A.R.V.I.S, tocca il cervello e metti una chiave (Groq o OpenRouter). Poi torna qui.</p>';
+      running=false;document.getElementById("run").disabled=false;return;
+    }
+    next();
+  };
+})();
+</script>
+<script>
+if("serviceWorker" in navigator){try{navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});}).catch(function(){});}catch(e){}}
+</script>
+</body>
+</html>

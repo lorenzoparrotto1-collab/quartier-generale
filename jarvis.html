@@ -309,11 +309,26 @@
     if(/grazie/.test(s)){speak("Sempre a disposizione, "+name+".");return;}
     if(/come mi chiamo|il mio nome/.test(s)){speak("Ti chiami "+name+".");return;}
     if(/\bmenu\b|stanze|stanza|elenco/.test(s)){speak("Apro le stanze.",function(){setTimeout(function(){location.href="index.html?menu";},300);});return;}
-    speak("Non ho capito, "+name+". Prova: ora, meteo, apri il radar, oppure stato.");
+    askAI(raw);
   }
 
 
   // ---------- ascolto continuo (Android / computer Chrome) ----------
+  function cleanAI(t){return String(t||"").replace(/[*_`#>\[\]]/g,"").replace(/\s+/g," ").trim().slice(0,600);}
+  function askAI(q){
+    cline("Jarvis sta pensando...");subEl.textContent="sto pensando...";stateEl.textContent="elaboro";
+    var sys="Sei Jarvis, assistente personale in italiano. Rispondi sempre in italiano, breve e chiaro, massimo due frasi, tono amichevole.";
+    var prompt=sys+"\n\nDomanda: "+q+"\nRisposta:";
+    var url="https://text.pollinations.ai/"+encodeURIComponent(prompt)+"?model=openai";
+    var done=false, to=setTimeout(function(){if(done)return;done=true;speak("Ci sto mettendo troppo, riprova, "+name+".");},16000);
+    fetch(url).then(function(r){return r.text();}).then(function(t){
+      if(done)return;done=true;clearTimeout(to);
+      var ans=cleanAI(t);
+      if(!ans){speak("Non ho trovato una risposta, "+name+".");return;}
+      cline(ans);speak(ans);
+    }).catch(function(){if(done)return;done=true;clearTimeout(to);speak("Non riesco a collegarmi al cervello, "+name+".");});
+  }
+
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition, rec=null, recActive=false, wantListen=false;
   function pauseRec(){ if(rec&&recActive){try{rec.stop();}catch(e){}} }
   function resumeRec(){ if(rec&&wantListen&&!recActive&&!speaking){try{rec.start();}catch(e){}} }

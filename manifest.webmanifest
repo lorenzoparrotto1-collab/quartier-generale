@@ -1,6 +1,6 @@
 {
-  "name": "Marcia",
-  "short_name": "Marcia",
+  "name": "JARVIS",
+  "short_name": "JARVIS",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

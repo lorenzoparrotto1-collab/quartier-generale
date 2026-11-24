@@ -10,8 +10,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Marcia">
-<title>Marcia</title>
+<meta name="apple-mobile-web-app-title" content="J.A.R.V.I.S">
+<title>J.A.R.V.I.S</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Space+Mono:wght@400;700&display=swap">
 <style>
   :root{
@@ -108,7 +108,7 @@
   <a class="back" href="index.html?menu">&#9776; stanze</a>
   <button class="back" id="cfgBtn" style="cursor:pointer;margin-left:8px">&#9881; bot</button>
   <button class="back" id="brainBtn" style="cursor:pointer;margin-left:8px">&#129504;</button>
-  <span class="brandtag">Marcia</span>
+  <span class="brandtag">J.A.R.V.I.S</span>
 </div>
 
 <div class="grid" id="grid">
@@ -129,7 +129,7 @@
     <div class="core">
       <canvas id="reactor"></canvas>
       <div class="coretext">
-        <div class="t">Marcia</div>
+        <div class="t">J.A.R.V.I.S</div>
         <div class="s" id="sub">in attesa</div>
       </div>
     </div>
@@ -160,7 +160,7 @@
     <div class="ring">
       <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#38e6ff" stroke-width="1.4"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
     </div>
-    <h1>Marcia</h1>
+    <h1>J.A.R.V.I.S</h1>
     <p>Scrivi il tuo nome e tocca Attiva.</p>
     <input id="goName" placeholder="il tuo nome" autocomplete="off" autocapitalize="words" style="display:block;width:100%;max-width:220px;margin:0 auto 14px;background:rgba(10,24,38,.85);border:1px solid var(--line);color:#dff3ff;font-family:var(--mono);font-size:.95rem;padding:11px 12px;border-radius:10px;text-align:center">
     <button id="go">Attiva</button>
@@ -179,7 +179,7 @@
 
   // ---------- console ----------
   var BOOT=[
-    "avvio nucleo Marcia v4.050",
+    "avvio nucleo J.A.R.V.I.S v4.050",
     "collegamento rete neurale ... ok",
     "moduli sensoriali ... ok",
     "sintesi vocale ... pronta",
@@ -307,7 +307,7 @@
     if(/stato|sistema|come stai|tutto bene/.test(s)){speak("Tutti i sistemi sono attivi. Nessuna anomalia, "+name+".");return;}
     if(/radar|telecamer/.test(s)){go("radar.html","Apro il radar.");return;}
     if(/blocca|chiudi|spegni|esci/.test(s)){speak("Il blocco e disattivato, "+name+".");return;}
-    if(/chi sei|come ti chiami|cosa sei/.test(s)){speak("Sono Marcia, il tuo assistente. Al tuo servizio.");return;}
+    if(/chi sei|come ti chiami|cosa sei/.test(s)){speak("Sono Jarvis, il tuo assistente. Al tuo servizio.");return;}
     if(/grazie/.test(s)){speak("Sempre a disposizione, "+name+".");return;}
     if(/come mi chiamo|il mio nome/.test(s)){speak("Ti chiami "+name+".");return;}
     if(/\bmenu\b|stanze|stanza|elenco/.test(s)){speak("Apro le stanze.",function(){setTimeout(function(){location.href="index.html?menu";},300);});return;}
@@ -365,11 +365,11 @@
   }
   function askAI(q){
     var key=ls("qg_claude_key")||"";
-    cline("Marcia sta pensando...");subEl.textContent="sto pensando...";stateEl.textContent="elaboro";
+    cline("Jarvis sta pensando...");subEl.textContent="sto pensando...";stateEl.textContent="elaboro";
     var done=false, to=setTimeout(function(){if(done)return;done=true;speak("Ci sto mettendo troppo, riprova, "+name+".");},25000);
     function fail(){if(done)return;done=true;clearTimeout(to);speak("Non riesco a collegarmi al cervello, "+name+".");}
     function ok(a){if(done)return;done=true;clearTimeout(to);a=cleanAI(a);if(!a){speak("Non ho trovato una risposta, "+name+".");return;}cline(a);speak(a);}
-    var SYS="Sei Marcia, assistente personale. Rispondi SEMPRE in italiano corretto e naturale, in modo chiaro, preciso e utile. Dai la risposta giusta e completa ma concisa, adatta a essere letta ad alta voce. Niente elenchi puntati o simboli: solo frasi.";
+    var SYS="Sei Jarvis, assistente personale. Rispondi SEMPRE in italiano corretto e naturale, in modo chiaro, preciso e utile. Dai la risposta giusta e completa ma concisa, adatta a essere letta ad alta voce. Niente elenchi puntati o simboli: solo frasi.";
     if(key){
       fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:"claude-3-5-haiku-latest",max_tokens:500,system:SYS,messages:[{role:"user",content:q}]})})
@@ -399,7 +399,7 @@
   function noVoiceFallback(){
     stateEl.textContent="scrivi, o detta col microfono della tastiera";
     var bar=document.createElement("form");bar.className="dock";
-    bar.innerHTML='<button type="button" class="mic" id="micBtn" aria-label="detta">\uD83C\uDFA4</button><input id="say" placeholder="scrivi a Marcia, o detta..." autocapitalize="off" autocorrect="off" enterkeyhint="send"><button type="submit" class="send">invia</button>';
+    bar.innerHTML='<button type="button" class="mic" id="micBtn" aria-label="detta">\uD83C\uDFA4</button><input id="say" placeholder="scrivi a Jarvis, o detta..." autocapitalize="off" autocorrect="off" enterkeyhint="send"><button type="submit" class="send">invia</button>';
     document.getElementById("grid").appendChild(bar);
     document.getElementById("micBtn").addEventListener("click",function(){var el=document.getElementById("say");el.focus();subEl.textContent="Tocca il microfono sulla tastiera e parla, poi invia";});
     bar.addEventListener("submit",function(e){e.preventDefault();var el=document.getElementById("say");var v=el.value;el.value="";respond(v);});
@@ -421,7 +421,7 @@
     try{speechSynthesis.getVoices();}catch(e){}
     var h=new Date().getHours();
     var saluto=h<5?"Buonanotte":h<12?"Buongiorno":h<18?"Buon pomeriggio":"Buonasera";
-    speak(saluto+" "+name+". Sono Marcia, in ascolto.",function(){wantListen=true;});
+    speak(saluto+" "+name+". Sono Jarvis, in ascolto.",function(){wantListen=true;});
     setupVoice();
     boot();
     loadWeather();

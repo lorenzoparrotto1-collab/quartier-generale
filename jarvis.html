@@ -459,7 +459,7 @@
     try{speechSynthesis.getVoices();}catch(e){}
     var h=new Date().getHours();
     var saluto=h<5?"Buonanotte":h<12?"Buongiorno":h<18?"Buon pomeriggio":"Buonasera";
-    speak(saluto+" "+name+". Sono Jarvis, in ascolto.",function(){wantListen=true;});
+    speakDevice(saluto+" "+name+". Sono Jarvis, in ascolto.",function(){wantListen=true;});
     setupVoice();
     boot();
     loadWeather();

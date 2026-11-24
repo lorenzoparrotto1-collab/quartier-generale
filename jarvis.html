@@ -386,52 +386,62 @@
   }
   function cleanAI(t){return String(t||"").replace(/[*_`#>\[\]]/g,"").replace(/\s+/g," ").trim().slice(0,1000);}
   function setBrain(){
-    var cur=ls("qg_claude_key")||"";
-    var k=prompt("Incolla la chiave API di Claude (Anthropic) per usarla come cervello.\nATTENZIONE: e a pagamento, ogni domanda consuma credito. Chiedi a un adulto.\nLascia vuoto per tornare al cervello gratuito."+(cur?"\n\n(ora e impostata una chiave)":""),"");
-    if(k===null)return; k=k.trim();
-    if(!k){try{localStorage.removeItem("qg_claude_key");}catch(e){} speak("Torno al cervello gratuito, "+name+"."); return;}
-    try{localStorage.setItem("qg_claude_key",k);}catch(e){}
-    speak("Cervello Claude collegato, "+name+".");
+    var scelta=prompt("Scegli il cervello di Jarvis:\n1 = Gemini di Google (GRATIS, serve una chiave gratuita, consigliato)\n2 = Claude (a PAGAMENTO, chiave sk-ant)\n3 = cervello gratuito senza chiave (poco affidabile)\n\nScrivi 1, 2 o 3","1");
+    if(scelta===null)return; scelta=scelta.trim();
+    if(scelta==="1"){
+      var g=prompt("Incolla la chiave Google Gemini (gratis).\nLa crei su aistudio.google.com > Get API key. Inizia con AIza...",ls("qg_gemini_key")||"");
+      if(g===null)return; g=g.trim();
+      try{localStorage.removeItem("qg_claude_key");}catch(e){}
+      if(g){try{localStorage.setItem("qg_gemini_key",g);}catch(e){} speak("Cervello Gemini collegato, "+name+".");}
+      else{try{localStorage.removeItem("qg_gemini_key");}catch(e){} speak("Chiave Gemini tolta.");}
+      return;
+    }
+    if(scelta==="2"){
+      var k=prompt("Incolla la chiave Claude (a pagamento, sk-ant...). Chiedi a un adulto.",ls("qg_claude_key")||"");
+      if(k===null)return; k=k.trim();
+      try{localStorage.removeItem("qg_gemini_key");}catch(e){}
+      if(k){try{localStorage.setItem("qg_claude_key",k);}catch(e){} speak("Cervello Claude collegato, "+name+".");}
+      else{try{localStorage.removeItem("qg_claude_key");}catch(e){} speak("Chiave Claude tolta.");}
+      return;
+    }
+    if(scelta==="3"){ try{localStorage.removeItem("qg_claude_key");localStorage.removeItem("qg_gemini_key");}catch(e){} speak("Torno al cervello gratuito senza chiave, "+name+"."); return; }
   }
   function askAI(q){
-    var key=ls("qg_claude_key")||"";
+    var ck=ls("qg_claude_key")||"", gk=ls("qg_gemini_key")||"";
     cline("Jarvis sta pensando...");subEl.textContent="sto pensando...";stateEl.textContent="elaboro";
     var done=false, to=setTimeout(function(){if(done)return;done=true;speak("Ci sto mettendo troppo, riprova, "+name+".");},25000);
     function fail(){if(done)return;done=true;clearTimeout(to);speak("Non riesco a collegarmi al cervello, "+name+".");}
     function ok(a){if(done)return;done=true;clearTimeout(to);a=cleanAI(a);if(!a){speak("Non ho trovato una risposta, "+name+".");return;}cline(a);speak(a);}
     var SYS="Sei Jarvis, assistente personale. Rispondi SEMPRE in italiano corretto e naturale, in modo chiaro, preciso e utile. Dai la risposta giusta e completa ma concisa, adatta a essere letta ad alta voce. Niente elenchi puntati o simboli: solo frasi.";
-    if(key){
-      fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    if(ck){
+      fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":ck,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
         body:JSON.stringify({model:"claude-3-5-haiku-latest",max_tokens:500,system:SYS,messages:[{role:"user",content:q}]})})
         .then(function(r){return r.json();}).then(function(d){
           var a="";try{a=(d&&d.content&&d.content[0]&&d.content[0].text)||"";}catch(e){}
           if(!a&&d&&d.error){speak("La chiave Claude non va: "+((d.error&&d.error.message)||"errore")+".");done=true;clearTimeout(to);return;}
           ok(a);
         }).catch(fail);
+    } else if(gk){
+      fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key="+encodeURIComponent(gk),{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({system_instruction:{parts:[{text:SYS}]},contents:[{role:"user",parts:[{text:q}]}]})})
+        .then(function(r){return r.json();}).then(function(d){
+          var a="";try{a=(d&&d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts&&d.candidates[0].content.parts[0]&&d.candidates[0].content.parts[0].text)||"";}catch(e){}
+          if(!a&&d&&d.error){speak("La chiave Gemini non va: "+((d.error&&d.error.message)||"errore")+".");done=true;clearTimeout(to);return;}
+          ok(a);
+        }).catch(fail);
     } else {
       var sysEnc=encodeURIComponent(SYS), qEnc=encodeURIComponent(q);
-      var attempts=[
-        {get:true, model:"openai"},
-        {get:true, model:"openai-large"},
-        {get:false, model:"openai"},
-        {get:true, model:"mistral"}
-      ];
+      var attempts=[{get:true,model:"openai"},{get:true,model:"openai-large"},{get:false,model:"openai"},{get:true,model:"mistral"}];
       (function tryA(i){
         if(done)return;
         if(i>=attempts.length){fail();return;}
         var at=attempts[i], p;
-        if(at.get){
-          p=fetch("https://text.pollinations.ai/"+qEnc+"?model="+at.model+"&system="+sysEnc+"&referrer=jarvis")
-             .then(function(r){if(!r.ok)throw 0;return r.text();}).then(function(t){return (t||"").trim();});
-        } else {
-          p=fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:at.model,messages:[{role:"system",content:SYS},{role:"user",content:q}]})})
-             .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}return (a||"").trim();});
-        }
+        if(at.get){ p=fetch("https://text.pollinations.ai/"+qEnc+"?model="+at.model+"&system="+sysEnc+"&referrer=jarvis").then(function(r){if(!r.ok)throw 0;return r.text();}).then(function(t){return (t||"").trim();}); }
+        else { p=fetch("https://text.pollinations.ai/openai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:at.model,messages:[{role:"system",content:SYS},{role:"user",content:q}]})}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){var a="";try{a=(d&&d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||"";}catch(e){}return (a||"").trim();}); }
         p.then(function(a){ if(a && a.charAt(0)!=="<" && a.length>1){ok(a);} else {tryA(i+1);} }).catch(function(){tryA(i+1);});
       })(0);
     }
   }
-
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition, rec=null, recActive=false, wantListen=false;
   function pauseRec(){ if(rec&&recActive){try{rec.stop();}catch(e){}} }
   function resumeRec(){ if(rec&&wantListen&&!recActive&&!speaking){try{rec.start();}catch(e){}} }

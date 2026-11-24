@@ -303,7 +303,7 @@
         speaking=true;stateEl.textContent="risposta";pauseRec();
         src.onended=function(){speaking=false;stateEl.textContent="in ascolto";if(then)then();resumeRec();};
         src.start(0);
-      }).catch(function(){ speakDevice(text,then); });
+      }).catch(function(){ try{localStorage.removeItem("qg_voice_ai");}catch(e){} speakDevice(text,then); });
   }
   function speakDevice(text,then){
     subEl.textContent=text;

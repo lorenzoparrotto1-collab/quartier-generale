@@ -326,10 +326,11 @@
     rec.onresult=function(ev){var r=ev.results[ev.results.length-1]; if(!r||!r.isFinal)return; var txt=r[0].transcript; if(txt&&txt.trim())respond(txt);};
   }
   function noVoiceFallback(){
-    stateEl.textContent="su iPhone scrivi qui";
+    stateEl.textContent="scrivi, o detta col microfono della tastiera";
     var bar=document.createElement("form");bar.className="dock";
-    bar.innerHTML='<input id="say" placeholder="scrivi a Jarvis..." autocapitalize="off" enterkeyhint="send"><button type="submit" class="send">invia</button>';
+    bar.innerHTML='<button type="button" class="mic" id="micBtn" aria-label="detta">\uD83C\uDFA4</button><input id="say" placeholder="scrivi a Jarvis, o detta..." autocapitalize="off" autocorrect="off" enterkeyhint="send"><button type="submit" class="send">invia</button>';
     document.getElementById("grid").appendChild(bar);
+    document.getElementById("micBtn").addEventListener("click",function(){var el=document.getElementById("say");el.focus();subEl.textContent="Tocca il microfono sulla tastiera e parla, poi invia";});
     bar.addEventListener("submit",function(e){e.preventDefault();var el=document.getElementById("say");var v=el.value;el.value="";respond(v);});
   }
 
